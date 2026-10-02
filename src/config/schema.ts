@@ -42,6 +42,7 @@ const termProperties = {
   macOptionSelectionMode: { enum: ["vertical", "force"], description: "\"force\" makes Option+click always select on macOS." },
   webGLRenderer: bool("Render with WebGL. Turned off automatically for transparent backgrounds."),
   webLinksActivationKey: { enum: ["", "ctrl", "alt", "meta", "shift"], description: "Modifier needed to open links. Empty opens on click." },
+  disableLigatures: bool("Turn off font ligatures such as => and !=."),
   screenReaderMode: bool("Expose terminal content to screen readers."),
   imageSupport: bool("Show inline images (sixel and iTerm2 protocol)."),
   modifierKeys: {

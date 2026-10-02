@@ -7,6 +7,7 @@ A fast, native terminal. A Rust + Tauri rewrite of [Hyper](https://github.com/ve
 - Tabs, split panes (drag dividers, double-click to even them out), pane and tab navigation
 - Search in scrollback (case, whole word, regex)
 - Clickable links, inline images, Unicode 11 widths, WebGL rendering
+- Ships with FiraCode Nerd Font Mono, with ligatures (`disableLigatures` turns them off)
 - Profiles: per-profile shell, args, env and colors, picked from the new-tab menu
 - New tabs and splits open in the current directory (`preserveCWD`, macOS and Linux)
 - Zoom, full screen, always on top, copy on select, quick edit, bell sound
@@ -37,7 +38,7 @@ They're downloaded into `themes/` and their `decorateConfig` runs in a Web Worke
 ### Not supported (yet)
 
 - Hyper plugins other than themes (use Vanitty plugins instead)
-- Font ligatures, auto-update, the `hyper` CLI, `ssh://` links, the Windows Explorer context menu entry
+- Auto-update, the `hyper` CLI, `ssh://` links, the Windows Explorer context menu entry
 
 ## Develop
 
@@ -55,3 +56,5 @@ Versions are `YY.MM.PATCH`; PATCH starts at 0 each month. `pnpm release` bumps t
 ## Stack
 
 Tauri v2, `portable-pty`, xterm.js, React 19 with the React Compiler, Zustand.
+
+FiraCode Nerd Font Mono is © The Fira Code Project Authors and Nerd Fonts, under the SIL Open Font License 1.1 (`public/fonts/LICENSE-FiraCode-NerdFont.txt`).

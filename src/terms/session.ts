@@ -5,6 +5,7 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { ImageAddon } from "@xterm/addon-image";
 import { WebglAddon } from "@xterm/addon-webgl";
+import { LigaturesAddon } from "@xterm/addon-ligatures";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import Color from "color";
@@ -102,6 +103,7 @@ export class TermSession {
   private fit = new FitAddon();
   private search = new SearchAddon();
   private webgl?: WebglAddon;
+  private ligatures?: LigaturesAddon;
   private image?: ImageAddon;
   private disposables: IDisposable[] = [];
   private bell: HTMLAudioElement | null = null;
@@ -153,6 +155,7 @@ export class TermSession {
     term.open(this.element);
     term.loadAddon(new Unicode11Addon());
     term.unicode.activeVersion = "11";
+    this.applyLigatures();
     this.applyRenderer();
     this.applyImages();
     this.applyPadding();
@@ -262,7 +265,13 @@ export class TermSession {
     }
     this.applyPadding();
     if (prev.bell !== config.bell || prev.bellSoundURL !== config.bellSoundURL) this.setBell(config);
-    if (prev.webGLRenderer !== config.webGLRenderer || alpha(prev.backgroundColor) !== alpha(config.backgroundColor)) {
+    if (prev.disableLigatures !== config.disableLigatures) {
+      // WebGL bakes font features into its glyph atlas, so reload it after.
+      this.webgl?.dispose();
+      this.webgl = undefined;
+      this.applyLigatures();
+      this.applyRenderer();
+    } else if (prev.webGLRenderer !== config.webGLRenderer || alpha(prev.backgroundColor) !== alpha(config.backgroundColor)) {
       this.applyRenderer();
     }
     if (prev.imageSupport !== config.imageSupport) this.applyImages();
@@ -272,6 +281,21 @@ export class TermSession {
   /** Padding goes on xterm's own element so the fit addon accounts for it. */
   private applyPadding() {
     if (this.term.element) this.term.element.style.padding = this.config.padding;
+  }
+
+  /** Must run before the WebGL addon loads so its atlas gets the font features. */
+  private applyLigatures() {
+    if (!this.config.disableLigatures && !this.ligatures) {
+      try {
+        this.ligatures = new LigaturesAddon();
+        this.term.loadAddon(this.ligatures);
+      } catch {
+        this.ligatures = undefined;
+      }
+    } else if (this.config.disableLigatures && this.ligatures) {
+      this.ligatures.dispose();
+      this.ligatures = undefined;
+    }
   }
 
   private applyRenderer() {

@@ -56,6 +56,7 @@ export interface TermConfig {
   quickEdit: boolean;
   macOptionSelectionMode: "vertical" | "force";
   webGLRenderer: boolean;
+  disableLigatures: boolean;
   webLinksActivationKey: "" | "ctrl" | "alt" | "meta" | "shift";
   screenReaderMode: boolean;
   imageSupport: boolean;
@@ -101,12 +102,13 @@ export const DEFAULT_COLORS: Colors = {
 };
 
 /**
- * Hyper's stock theme and defaults, so Vanitty looks like Hyper out of the
- * box and an imported Hyper config looks the same here.
+ * Hyper's stock theme and defaults, so an imported Hyper config looks the
+ * same here. Vanitty differs in font (bundled FiraCode Nerd Font Mono with
+ * ligatures, 13px), blinking cursor, no bell, quick edit and WebGL.
  */
 export const DEFAULT_CONFIG: Config = {
-  fontSize: 12,
-  fontFamily: 'Menlo, "DejaVu Sans Mono", Consolas, "Lucida Console", monospace',
+  fontSize: 13,
+  fontFamily: '"FiraCode Nerd Font Mono", Menlo, "DejaVu Sans Mono", Consolas, "Lucida Console", monospace',
   uiFontFamily:
     '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif',
   fontWeight: "normal",
@@ -117,7 +119,7 @@ export const DEFAULT_CONFIG: Config = {
   cursorColor: "rgba(248,28,229,0.8)",
   cursorAccentColor: "#000",
   cursorShape: "BLOCK",
-  cursorBlink: false,
+  cursorBlink: true,
   foregroundColor: "#fff",
   backgroundColor: "#000",
   selectionColor: "rgba(248,28,229,0.3)",
@@ -133,16 +135,17 @@ export const DEFAULT_CONFIG: Config = {
   shell: "",
   shellArgs: ["--login"],
   env: {},
-  bell: "SOUND",
+  bell: false,
   bellSound: null,
   bellSoundURL: null,
   copyOnSelect: false,
-  quickEdit: false,
+  quickEdit: true,
   macOptionSelectionMode: "vertical",
   webGLRenderer: true,
   webLinksActivationKey: "",
   screenReaderMode: false,
   imageSupport: true,
+  disableLigatures: false,
   modifierKeys: { altIsMeta: false, cmdIsMeta: false },
   preserveCWD: true,
   defaultProfile: "default",
@@ -159,8 +162,8 @@ export const SETTINGS_TEMPLATE = `{
   // editors like VS Code autocomplete and validate this file.
   // Changes apply as soon as you save.
 
-  "fontSize": 12,
-  "fontFamily": "Menlo, \\"DejaVu Sans Mono\\", Consolas, \\"Lucida Console\\", monospace",
+  "fontSize": 13,
+  "fontFamily": "\\"FiraCode Nerd Font Mono\\", Menlo, \\"DejaVu Sans Mono\\", Consolas, monospace",
   "cursorShape": "BLOCK",
   "padding": "12px 14px",
 
