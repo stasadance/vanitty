@@ -7,7 +7,7 @@ import { emit, syncPlugins } from "./plugins/host";
 import { COMMAND_IDS, commandAllowedInInput, inInput, runCommand } from "./commands";
 import { eventKey, platform } from "./config/keymaps";
 import { ensureConfigFiles, loadConfig } from "./config/load";
-import { installAppMenu } from "./menu";
+import { installAppMenu, popupHamburger } from "./menu";
 import { activeSessionUid, getState, notify, setState, useStore } from "./store";
 
 let configErrors: string[] = [];
@@ -81,6 +81,13 @@ export async function boot() {
       term?.focus();
     }
   });
+
+  // xterm measures the font when a terminal opens, so the bundled font must
+  // be ready first or cells come out the fallback font's size.
+  await Promise.all(
+    ["400", "700"].map((w) => document.fonts.load(`${w} 13px "FiraCode Nerd Font Mono"`).catch(() => [])),
+  );
+  window.addEventListener("vanitty:hamburger", () => void popupHamburger(10, 34));
 
   await trackWindowState();
   useStore.subscribe((s, prev) => {

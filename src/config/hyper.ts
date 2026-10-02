@@ -22,9 +22,9 @@ const DROPPED = [
   "disableAutoUpdates",
   "autoUpdatePlugins",
   "defaultSSHApp",
-  "disableLigatures",
   "useConpty",
   "windowSize",
+  "fontSmoothing",
 ];
 
 export interface Imported {
