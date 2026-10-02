@@ -40,6 +40,17 @@ They're downloaded into `themes/` and their `decorateConfig` runs in a Web Worke
 - Hyper plugins other than themes (use Vanitty plugins instead)
 - Auto-update, the `hyper` CLI, `ssh://` links, the Windows Explorer context menu entry
 
+## Install
+
+Installers for Windows and Linux are attached to each [release](https://github.com/stasadance/vanitty/releases).
+
+On Arch Linux, build the package from the repo:
+
+```sh
+cd packaging/arch
+makepkg -si
+```
+
 ## Develop
 
 Requires Rust, Node 22+, pnpm, and the [Tauri prerequisites](https://tauri.app/start/prerequisites/).
