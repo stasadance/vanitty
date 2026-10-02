@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Vanitty
+GenericName=Terminal
+Comment=A fast, native terminal
+Exec=vanitty
+Icon=vanitty
+Terminal=false
+Categories=System;TerminalEmulator;
+Keywords=terminal;shell;prompt;command;commandline;
+StartupWMClass=vanitty
