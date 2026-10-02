@@ -51,7 +51,7 @@ pnpm tauri dev
 
 ## Releases
 
-Versions are `YY.MM.PATCH`; PATCH starts at 0 each month. `pnpm release` bumps the version, commits and tags it (`--push` also pushes). Pushing a `v*` tag runs the Release workflow, which builds Windows (`.msi`, `.exe`) and Linux (`.deb`, `.rpm`, `.AppImage`) installers and attaches them to a GitHub release.
+Versions are `YY.MM.PATCH`; PATCH starts at 0 each month. `pnpm release` bumps the version, commits and tags it (`--push` also pushes). Pushing a `v*` tag, or running the Release workflow from the Actions tab (which releases the version in `package.json`), runs the Release workflow, which builds Windows (`.msi`, `.exe`) and Linux (`.deb`, `.rpm`, `.AppImage`) installers and attaches them to a GitHub release.
 
 ## Stack
 
