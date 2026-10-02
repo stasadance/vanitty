@@ -100,12 +100,15 @@ export const DEFAULT_COLORS: Colors = {
   lightCoral: "#F08080",
 };
 
-/** Hyper's defaults, so an imported Hyper config looks the same here. */
+/**
+ * Hyper's stock theme and defaults, so Vanitty looks like Hyper out of the
+ * box and an imported Hyper config looks the same here.
+ */
 export const DEFAULT_CONFIG: Config = {
   fontSize: 12,
   fontFamily: 'Menlo, "DejaVu Sans Mono", Consolas, "Lucida Console", monospace',
   uiFontFamily:
-    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif',
   fontWeight: "normal",
   fontWeightBold: "bold",
   lineHeight: 1,
