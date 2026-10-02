@@ -48,6 +48,10 @@ pnpm install
 pnpm tauri dev
 ```
 
+## Releases
+
+Versions are `YY.MM.PATCH`; PATCH starts at 0 each month. `pnpm release` bumps the version, commits and tags it (`--push` also pushes). Pushing a `v*` tag runs the Release workflow, which builds Windows (`.msi`, `.exe`) and Linux (`.deb`, `.rpm`, `.AppImage`) installers and attaches them to a GitHub release.
+
 ## Stack
 
 Tauri v2, `portable-pty`, xterm.js, React 19 with the React Compiler, Zustand.

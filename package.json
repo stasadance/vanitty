@@ -1,14 +1,15 @@
 {
   "name": "vanitty",
   "private": true,
-  "version": "0.1.0",
+  "version": "26.10.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "typecheck": "tsc",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.1",
@@ -38,5 +39,6 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "typescript": "~6.0.3",
     "vite": "^8.3.2"
-  }
+  },
+  "packageManager": "pnpm@10.28.0"
 }
