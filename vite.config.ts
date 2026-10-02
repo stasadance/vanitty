@@ -13,6 +13,8 @@ export default defineConfig(() => ({
   //
   // 1. prevent Vite from obscuring rust errors
   clearScreen: false,
+  // xterm.js and its addons are one big chunk, loaded from disk anyway.
+  build: { chunkSizeWarningLimit: 1500 },
   // 2. tauri expects a fixed port, fail if that port is not available
   server: {
     port: 1420,
