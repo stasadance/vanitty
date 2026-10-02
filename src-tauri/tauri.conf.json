@@ -10,13 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "windows": [
-      {
-        "title": "Vanitty",
-        "width": 900,
-        "height": 600
-      }
-    ],
+    "windows": [],
     "security": {
       "csp": null
     }
