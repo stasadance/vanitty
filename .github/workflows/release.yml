@@ -1,21 +1,19 @@
 name: Release
 
-# Builds installers for Windows and Linux when a version tag is pushed
-# (see `pnpm release`) and attaches them to a GitHub release for that tag.
+# Builds installers for Windows and Linux and attaches them to a GitHub
+# release. Runs when a version tag is pushed (see `pnpm release`), or by hand
+# from the Actions tab, which releases the version in package.json and
+# creates its tag.
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
-    inputs:
-      tag:
-        description: Existing tag to build, e.g. v26.10.0
-        required: true
 
 permissions:
   contents: write
 
 concurrency:
-  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  group: release-${{ github.ref }}
 
 jobs:
   build:
@@ -28,8 +26,16 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Resolve tag
+        id: tag
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "name=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -54,8 +60,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.event.inputs.tag || github.ref_name }}
-          releaseName: Vanitty ${{ github.event.inputs.tag || github.ref_name }}
+          tagName: ${{ steps.tag.outputs.name }}
+          releaseName: Vanitty ${{ steps.tag.outputs.name }}
+          releaseCommitish: ${{ github.sha }}
           releaseBody: See the assets below to download and install Vanitty.
           releaseDraft: false
           prerelease: false
