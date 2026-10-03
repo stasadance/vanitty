@@ -1,6 +1,6 @@
 name: Release
 
-# Builds installers for Windows and Linux and attaches them to a GitHub
+# Builds installers for Windows, Linux and macOS and attaches them to a GitHub
 # release. Runs when a version tag is pushed (see `pnpm release`), or by hand
 # from the Actions tab, which releases the version in package.json and
 # creates its tag.
@@ -23,6 +23,10 @@ jobs:
         include:
           - platform: ubuntu-22.04
           - platform: windows-latest
+          # One universal app for Apple Silicon and Intel Macs.
+          - platform: macos-latest
+            args: --target universal-apple-darwin
+            targets: aarch64-apple-darwin,x86_64-apple-darwin
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v7
@@ -50,6 +54,8 @@ jobs:
           cache: pnpm
 
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.targets }}
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
@@ -66,3 +72,4 @@ jobs:
           releaseBody: See the assets below to download and install Vanitty.
           releaseDraft: false
           prerelease: false
+          args: ${{ matrix.args }}
