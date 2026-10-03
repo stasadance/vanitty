@@ -18,6 +18,33 @@ const THEME_COLOR_KEYS = [
 ];
 export const KEYBINDINGS = "keybindings.json";
 
+/**
+ * The only settings a theme may change: how Vanitty looks. Theme code comes
+ * from npm, so it must not set the shell, its arguments, environment or
+ * folder, plugins or anything else that runs or loads something.
+ */
+const THEME_KEYS = new Set([
+    ...THEME_COLOR_KEYS,
+    "colors",
+    "css",
+    "termCSS",
+    "fontFamily",
+    "uiFontFamily",
+    "fontSize",
+    "fontWeight",
+    "fontWeightBold",
+    "lineHeight",
+    "letterSpacing",
+    "padding",
+    "cursorShape",
+    "cursorBlink",
+]);
+
+/** The looks-only part of what themes returned. */
+function themeChanges(themed: Record<string, unknown>): Record<string, unknown> {
+    return Object.fromEntries(Object.entries(themed).filter(([key]) => THEME_KEYS.has(key)));
+}
+
 export interface Loaded {
     config: Config;
     keymap: Map<string, string>;
@@ -115,10 +142,11 @@ export async function loadConfig(): Promise<Loaded> {
         for (const key of THEME_COLOR_KEYS) if (!(key in userConfig)) delete input[key];
         const themed = await applyThemes(themes, input);
         errors.push(...themed.errors);
-        // Themes return a whole config; keep anything they dropped.
+        // Themes return a whole config; keep anything they dropped, and take
+        // only the settings that change how things look.
         config = {
             ...config,
-            ...themed.config,
+            ...themeChanges(themed.config),
             colors: { ...config.colors, ...(themed.config.colors as object) },
         } as Config;
     }
