@@ -1,0 +1,27 @@
+name: Bug report
+description: Something doesn't work right
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. Screenshots help.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Vanitty version
+      placeholder: "26.10.0"
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: OS
+      placeholder: "Windows 11, Ubuntu 24.04, Arch..."
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: settings.json
+      description: Only if the bug looks config related.
+      render: jsonc
