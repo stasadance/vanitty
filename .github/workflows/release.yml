@@ -1,12 +1,13 @@
 name: Release
 
 # Builds installers for Windows, Linux and macOS and attaches them to a GitHub
-# release. Runs when a version tag is pushed (see `pnpm release`), or by hand
-# from the Actions tab, which releases the version in package.json and
-# creates its tag.
+# release tagged v<version>. Runs when a change to package.json lands on main
+# (the PR `pnpm release` opens), or by hand from the Actions tab. Skips when
+# the version in package.json is already released.
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
+    paths: [package.json]
   workflow_dispatch:
 
 permissions:
@@ -16,7 +17,27 @@ concurrency:
   group: release-${{ github.ref }}
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.name }}
+      released: ${{ steps.tag.outputs.released }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Resolve tag
+        id: tag
+        run: |
+          tag="v$(node -p "require('./package.json').version")"
+          echo "name=$tag" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
+    needs: version
+    if: needs.version.outputs.released == 'false'
     strategy:
       fail-fast: false
       matrix:
@@ -30,16 +51,6 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v7
-
-      - name: Resolve tag
-        id: tag
-        shell: bash
-        run: |
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "name=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
-          else
-            echo "name=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -66,8 +77,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ steps.tag.outputs.name }}
-          releaseName: Vanitty ${{ steps.tag.outputs.name }}
+          tagName: ${{ needs.version.outputs.tag }}
+          releaseName: Vanitty ${{ needs.version.outputs.tag }}
           releaseCommitish: ${{ github.sha }}
           releaseBody: See the assets below to download and install Vanitty.
           # Appends the merged PRs since the last release (see .github/release.yml).

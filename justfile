@@ -33,9 +33,9 @@ check:
 fmt:
     cargo fmt {{manifest}}
 
-# Bump to the next YY.MM.PATCH, commit and tag; `just release --push` also pushes
-release *args:
-    pnpm release {{args}}
+# Open a PR bumping to the next YY.MM.PATCH; merging it publishes the release
+release:
+    pnpm release
 
 # Publish the vanitty crate to crates.io
 publish:
