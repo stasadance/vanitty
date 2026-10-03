@@ -11,6 +11,7 @@ pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(window::state_plugin())
         .manage(pty::PtyManager::default())
         .invoke_handler(tauri::generate_handler![
             pty::pty_spawn,

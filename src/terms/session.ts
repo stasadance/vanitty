@@ -49,7 +49,7 @@ export function termOptions(c: TermConfig, fontSize: number): ITerminalOptions {
     allowTransparency: transparent,
     screenReaderMode: c.screenReaderMode,
     windowsPty: platform === "windows" ? { backend: "conpty" } : undefined,
-    overviewRuler: { width: 20 },
+    overviewRuler: { width: 10 },
     allowProposedApi: true,
     theme: {
       foreground: c.foregroundColor,
