@@ -2,10 +2,9 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 
-// Served from GitHub Pages at https://stasadance.github.io/vanitty/
+// Served from GitHub Pages at https://vanitty.dev
 export default defineConfig({
-  site: "https://stasadance.github.io",
-  base: "/vanitty",
+  site: "https://vanitty.dev",
   integrations: [
     starlight({
       title: "Vanitty",

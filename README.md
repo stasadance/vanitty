@@ -7,7 +7,7 @@
 
 A fast, native terminal. A Rust + Tauri rewrite of [Hyper](https://github.com/vercel/hyper) without Electron.
 
-**[Website and docs](https://stasadance.github.io/vanitty/)**
+**[Website and docs](https://vanitty.dev)**
 
 <p align="center"><img alt="Vanitty with neofetch and git log" src="docs/assets/screenshots/hero.png"></p>
 
