@@ -13,7 +13,7 @@ Vanitty is a fast, native terminal. It's a Rust and Tauri rewrite of [Hyper](htt
 - Ships with FiraCode Nerd Font Mono, with ligatures (`disableLigatures` turns them off)
 - Profiles: per-profile shell, args, env and colors, picked from the new-tab menu
 - New tabs and splits open in the current directory (`preserveCWD`, macOS and Linux)
-- Reopens your windows, tabs, splits, folders and terminal text on launch (`restoreSession`)
+- Reopens your windows, tabs, splits, folders and terminal text on launch (`restoreSession`), and remembers window size
 - Zoom, full screen, always on top, copy on select, quick edit, bell sound
 - Drag files onto a terminal to paste their paths
 - Rounded, frameless window on Linux and Windows; native rounded window on macOS
@@ -23,4 +23,4 @@ Vanitty is a fast, native terminal. It's a Rust and Tauri rewrite of [Hyper](htt
 ## Not supported (yet)
 
 - Hyper plugins other than themes (use Vanitty plugins instead)
-- Auto-update, the `hyper` CLI, `ssh://` links, the Windows Explorer context menu entry
+- The `hyper` CLI, `ssh://` links, the Windows Explorer context menu entry
