@@ -70,6 +70,8 @@ jobs:
           releaseName: Vanitty ${{ steps.tag.outputs.name }}
           releaseCommitish: ${{ github.sha }}
           releaseBody: See the assets below to download and install Vanitty.
+          # Appends the merged PRs since the last release (see .github/release.yml).
+          generateReleaseNotes: true
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
