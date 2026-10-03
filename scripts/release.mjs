@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// Bumps the version to YY.MM.PATCH (PATCH resets each month), commits, and
-// tags it. Pushing the tag starts the release build in CI.
+// Bumps the version to YY.MM.PATCH (PATCH resets each month) on a
+// release/vX branch off origin/main, pushes it and opens a PR. Merging that PR
+// runs the Release workflow, which tags the merge and publishes the release.
 //
-//   pnpm release          bump, commit, tag
-//   pnpm release --push   ...and push the commit and tag
+//   pnpm release
 
 import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -15,6 +15,9 @@ if (execSync("git status --porcelain").toString().trim()) {
   console.error("Commit or stash your changes first.");
   process.exit(1);
 }
+
+run("git fetch origin main");
+run("git switch --detach origin/main");
 
 const pkg = JSON.parse(read("package.json"));
 const now = new Date();
@@ -37,12 +40,15 @@ writeFileSync(
   read("src-tauri/Cargo.lock").replace(/(name = "vanitty"\nversion = )".*"/, `$1"${version}"`),
 );
 
+const branch = `release/v${version}`;
+run(`git switch -c ${branch}`);
 run("git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock");
 run(`git commit -m "Release v${version}"`);
-run(`git tag v${version}`);
-if (process.argv.includes("--push")) {
-  run("git push");
-  run(`git push origin v${version}`);
-} else {
-  console.log(`\nTagged v${version}. Push it to build the release:\n  git push && git push origin v${version}`);
+run(`git push -u origin ${branch}`);
+
+const body = `Bumps the version to ${version}. Merging this releases v${version}.`;
+try {
+  run(`gh pr create --base main --head ${branch} --title "Release v${version}" --body "${body}"`);
+} catch {
+  console.log(`\nOpen the PR: https://github.com/stasadance/vanitty/compare/main...${branch}?expand=1`);
 }
