@@ -20,6 +20,7 @@ A fast, native terminal. A Rust + Tauri rewrite of [Hyper](https://github.com/ve
 - Profiles: per-profile shell, args, env and colors, picked from the new-tab menu
 - New tabs and splits open in the current directory (`preserveCWD`, macOS and Linux)
 - Zoom, full screen, always on top, copy on select, quick edit, bell sound
+- Programs like tmux, vim and remote shells can copy to your clipboard (OSC 52)
 - Drag files onto a terminal to paste their paths
 - Reopens your windows, tabs, splits, folders and terminal text on launch (`restoreSession`), and remembers window size
 - Rounded, frameless window on Linux and Windows; native rounded window on macOS
