@@ -64,7 +64,7 @@ function TermView({ sessionUid }: { sessionUid: string }) {
       onMouseDown={() => setActiveSession(sessionUid)}
       onContextMenu={(e) => {
         e.preventDefault();
-        if (!c.quickEdit) void popupContextMenu();
+        if (!c.quickEdit) void popupContextMenu(e.clientX, e.clientY);
       }}
     >
       <div ref={wrapper} className="term_fit term_wrapper" />

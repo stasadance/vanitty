@@ -39,7 +39,7 @@ export function Header() {
       className={`header_header ${isMac ? "header_headerRounded" : ""}`}
       onContextMenu={(e) => {
         e.preventDefault();
-        void popupTitleMenu();
+        void popupTitleMenu(e.clientX, e.clientY);
       }}
     >
       {!isMac && (

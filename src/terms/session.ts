@@ -6,13 +6,14 @@ import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { ImageAddon } from "@xterm/addon-image";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { LigaturesAddon } from "@xterm/addon-ligatures";
+import { SerializeAddon } from "@xterm/addon-serialize";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import Color from "color";
 import type { TermConfig } from "../config/defaults";
 import { platform } from "../config/keymaps";
 import { DEFAULT_BELL } from "./bell";
-import { killPty, resizePty, spawnPty, writePty, type Exited, type SpawnOptions } from "./pty";
+import { killPty, ptyCwd, resizePty, spawnPty, writePty, type Exited, type SpawnOptions } from "./pty";
 
 const CURSOR_STYLES = { BEAM: "bar", UNDERLINE: "underline", BLOCK: "block" } as const;
 
@@ -49,7 +50,7 @@ export function termOptions(c: TermConfig, fontSize: number): ITerminalOptions {
     allowTransparency: transparent,
     screenReaderMode: c.screenReaderMode,
     windowsPty: platform === "windows" ? { backend: "conpty" } : undefined,
-    overviewRuler: { width: 20 },
+    overviewRuler: { width: 10 },
     allowProposedApi: true,
     theme: {
       foreground: c.foregroundColor,
@@ -102,6 +103,7 @@ export class TermSession {
   readonly element: HTMLDivElement;
   private fit = new FitAddon();
   private search = new SearchAddon();
+  private serializer = new SerializeAddon();
   private webgl?: WebglAddon;
   private ligatures?: LigaturesAddon;
   private image?: ImageAddon;
@@ -122,10 +124,13 @@ export class TermSession {
     private spawn: Omit<SpawnOptions, "cols" | "rows">,
     private events: SessionEvents,
     private onSpawned: (shell: string, ptyId: number) => void,
+    /** Screen text from the last run, shown above the new shell. */
+    private restored?: string,
   ) {
     this.config = config;
     this.fontSize = fontSize;
     this.term = new Terminal(termOptions(config, fontSize));
+    this.term.loadAddon(this.serializer);
     this.element = document.createElement("div");
     this.element.className = "term_fit term_term";
     this.setBell(config);
@@ -160,6 +165,10 @@ export class TermSession {
     this.applyImages();
     this.applyPadding();
     this.fit.fit();
+    if (this.restored) {
+      term.write(this.restored + "\r\n");
+      this.restored = undefined;
+    }
 
     this.disposables.push(
       term.onTitleChange((t) => this.events.onTitle(t)),
@@ -220,6 +229,18 @@ export class TermSession {
     }
     this.exited = true;
     this.events.onExit();
+  }
+
+  /** Screen and scrollback text, without what full-screen programs drew. */
+  snapshot(): string {
+    if (!this.opened) return this.restored ?? "";
+    return this.serializer.serialize({ excludeAltBuffer: true, excludeModes: true });
+  }
+
+  /** The shell's current directory, else the one it started in. */
+  async cwd(): Promise<string | undefined> {
+    const live = this.ptyId !== undefined ? await ptyCwd(this.ptyId).catch(() => null) : null;
+    return live || this.spawn.cwd || undefined;
   }
 
   write(data: string) {

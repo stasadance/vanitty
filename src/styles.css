@@ -616,6 +616,14 @@ body,
   display: none;
 }
 
+/* Thin rounded scrollbar thumb, inset from the edge. xterm sizes the slider
+   inline, so the inset needs !important. */
+.xterm .xterm-scrollable-element > .scrollbar.vertical > .slider {
+  left: 3px !important;
+  width: 4px !important;
+  border-radius: 2px;
+}
+
 /* Plugin title bar items */
 
 .header_pluginItems {

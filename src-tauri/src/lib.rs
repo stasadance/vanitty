@@ -1,6 +1,7 @@
 mod config;
 mod packages;
 mod pty;
+mod session;
 mod updater;
 mod window;
 
@@ -13,7 +14,9 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(window::state_plugin())
         .manage(pty::PtyManager::default())
+        .manage(session::SessionStore::load())
         .manage(updater::Updater::default())
         .invoke_handler(tauri::generate_handler![
             pty::pty_spawn,
@@ -32,6 +35,10 @@ pub fn run() {
             updater::update_check,
             updater::update_install,
             window::window_new,
+            session::session_take,
+            session::session_save,
+            session::session_clear,
+            session::session_quitting,
         ])
         .on_page_load(|webview, payload| {
             if payload.event() == PageLoadEvent::Started {
@@ -45,6 +52,7 @@ pub fn run() {
                 window
                     .state::<pty::PtyManager>()
                     .kill_window(window.label());
+                session::SessionStore::window_closed(window.app_handle(), window.label());
             }
         })
         .setup(|app| {

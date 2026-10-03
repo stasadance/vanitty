@@ -70,6 +70,7 @@ export const SETTINGS_SCHEMA = {
     borderRadius: num("Window corner radius in pixels (Linux and Windows; macOS uses the system corners)."),
     preserveCWD: bool("Open new tabs and splits in the current directory."),
     disableAutoUpdates: bool("Stop downloading updates in the background."),
+    restoreSession: bool("Reopen your windows, tabs, splits, folders and terminal text on launch."),
     defaultProfile: str("Profile used for new tabs."),
     profiles: {
       type: "array",

@@ -71,6 +71,7 @@ export interface Config extends TermConfig {
   borderRadius: number;
   preserveCWD: boolean;
   disableAutoUpdates: boolean;
+  restoreSession: boolean;
   defaultProfile: string;
   profiles: Profile[];
   /** Hyper theme packages from npm, applied in order. */
@@ -150,6 +151,7 @@ export const DEFAULT_CONFIG: Config = {
   modifierKeys: { altIsMeta: false, cmdIsMeta: false },
   preserveCWD: true,
   disableAutoUpdates: false,
+  restoreSession: true,
   defaultProfile: "default",
   profiles: [{ name: "default", config: {} }],
   themes: [],

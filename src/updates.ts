@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { saveNow } from "./persist";
 import { getState, notify } from "./store";
 
 const FIRST_CHECK = 10_000;
@@ -14,7 +15,11 @@ async function check() {
   shown = true;
   notify(`Vanitty ${version} is ready.`, false, {
     label: "Restart to update",
-    run: () => void invoke("update_install").catch((e) => notify(`Update failed: ${e}`, true)),
+    run: async () => {
+      // Save this window first so the restart reopens it as it is now.
+      await saveNow();
+      await invoke("update_install").catch((e) => notify(`Update failed: ${e}`, true));
+    },
   });
 }
 

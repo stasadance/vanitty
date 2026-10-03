@@ -8,6 +8,7 @@ import { COMMAND_IDS, commandAllowedInInput, inInput, runCommand } from "./comma
 import { eventKey, platform } from "./config/keymaps";
 import { ensureConfigFiles, loadConfig } from "./config/load";
 import { installAppMenu, popupHamburger } from "./menu";
+import { restoreSession, trackSession } from "./persist";
 import { activeSessionUid, getState, notify, setState, useStore } from "./store";
 import { startUpdateChecks } from "./updates";
 
@@ -96,5 +97,6 @@ export async function boot() {
     const active = activeSessionUid(s);
     if (active && active !== activeSessionUid(prev)) emit("terminal.active", active);
   });
-  await newTab();
+  if (!(await restoreSession())) await newTab();
+  await trackSession();
 }
