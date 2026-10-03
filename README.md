@@ -7,6 +7,10 @@
 
 A fast, native terminal. A Rust + Tauri rewrite of [Hyper](https://github.com/vercel/hyper) without Electron.
 
+**[Website and docs](https://stasadance.github.io/vanitty/)**
+
+<p align="center"><img alt="Vanitty with neofetch and git log" src="docs/assets/screenshots/hero.png"></p>
+
 ## Features
 
 - Tabs, split panes (drag dividers, double-click to even them out), pane and tab navigation

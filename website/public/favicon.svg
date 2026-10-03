@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><defs><linearGradient id="pk" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#F81CE5"/><stop offset="1" stop-color="#7B5CFF"/></linearGradient><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A1720"/><stop offset="1" stop-color="#09080B"/></linearGradient></defs>
+<rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+<path d="M0 230 A230 230 0 0 1 230 0 H794 A230 230 0 0 1 1024 230 V190 H0Z" fill="none"/>
+<rect x="0" y="188" width="1024" height="2" fill="#fff" fill-opacity=".08"/>
+<circle cx="200" cy="110" r="26" fill="#fff" fill-opacity=".18"/><circle cx="280" cy="110" r="26" fill="#fff" fill-opacity=".18"/><circle cx="360" cy="110" r="26" fill="#fff" fill-opacity=".18"/>
+<rect x="150" y="300" width="460" height="34" rx="6" fill="#fff" fill-opacity=".12"/><rect x="150" y="380" width="620" height="34" rx="6" fill="#fff" fill-opacity=".08"/><rect x="150" y="460" width="380" height="34" rx="6" fill="#fff" fill-opacity=".08"/>
+<g transform="translate(150 600) scale(.62) translate(-250 -290)"><path d="M250 290 L380 290 L512 560 L447 690 Z" fill="#F4F4F6"/><path d="M774 290 L644 290 L512 560 L577 690 Z" fill="#F4F4F6" fill-opacity=".55"/><rect x="824" y="625" width="250" height="65" fill="url(#pk)"/></g></svg>
