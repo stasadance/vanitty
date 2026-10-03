@@ -168,3 +168,16 @@ export async function popupContextMenu() {
   });
   await menu.popup();
 }
+
+/** Right-click on the title bar: settings and the webview inspector. */
+export async function popupTitleMenu() {
+  const menu = await Menu.new({
+    items: [
+      await item("Open Settings", "window:preferences", false),
+      await item("Open Keybindings", "window:keybindings", false),
+      await sep(),
+      await item("Inspect Element", "window:devtools", false),
+    ],
+  });
+  await menu.popup();
+}
