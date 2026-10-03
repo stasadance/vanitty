@@ -2,6 +2,7 @@
 title: Settings
 description: Configure Vanitty with settings.json.
 ---
+
 import SettingsTable from "../../../components/SettingsTable.astro";
 
 Settings live in `~/.config/vanitty` (`%APPDATA%\Vanitty` on Windows, or `$XDG_CONFIG_HOME/vanitty`). Open them with **Settings > Open Settings** or <kbd>Ctrl</kbd>+<kbd>,</kbd> (<kbd>⌘</kbd>+<kbd>,</kbd> on macOS).
@@ -10,11 +11,11 @@ Settings live in `~/.config/vanitty` (`%APPDATA%\Vanitty` on Windows, or `$XDG_C
 
 ```jsonc
 {
-  "$schema": "./settings.schema.json",
-  "fontSize": 13,
-  "cursorShape": "BLOCK",
-  "padding": "12px 14px",
-  "themes": ["hyper-snazzy"]
+    "$schema": "./settings.schema.json",
+    "fontSize": 13,
+    "cursorShape": "BLOCK",
+    "padding": "12px 14px",
+    "themes": ["hyper-snazzy"],
 }
 ```
 

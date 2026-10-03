@@ -26,12 +26,14 @@ build:
 # Typecheck, format check, lint and test, like CI
 check:
     pnpm typecheck
+    pnpm format:check
     cargo fmt {{manifest}} --check
     cargo clippy {{manifest}} --all-targets -- -D warnings
     cargo test {{manifest}}
 
-# Format Rust code
-fmt:
+# Format all code
+format:
+    pnpm format
     cargo fmt {{manifest}}
 
 # Open a PR bumping to the next YY.MM.PATCH; merging it publishes the release

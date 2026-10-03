@@ -2,6 +2,7 @@
 title: Install
 description: Install Vanitty on macOS, Linux or Windows.
 ---
+
 import { Tabs, TabItem } from "@astrojs/starlight/components";
 
 <Tabs syncKey="os">
@@ -11,6 +12,7 @@ import { Tabs, TabItem } from "@astrojs/starlight/components";
     ```
 
     Installs `Vanitty.app` in `/Applications` (or `~/Applications` if you can't write there). One universal build runs on Apple Silicon and Intel.
+
   </TabItem>
   <TabItem label="Linux">
     ```sh
@@ -18,6 +20,7 @@ import { Tabs, TabItem } from "@astrojs/starlight/components";
     ```
 
     Installs the AppImage in `~/.local/share/vanitty`, adds a menu entry and links a `vanitty` command in `~/.local/bin`. No root needed. AppImages need FUSE, which most desktops have; install your distro's `fuse3` package if Vanitty doesn't start. Builds are x86_64 only.
+
   </TabItem>
   <TabItem label="Windows">
     In PowerShell:
@@ -27,6 +30,7 @@ import { Tabs, TabItem } from "@astrojs/starlight/components";
     ```
 
     Runs the per-user installer silently, so there's no admin prompt. Vanitty then shows up in the Start menu.
+
   </TabItem>
 </Tabs>
 
@@ -72,13 +76,13 @@ Your settings in `~/.config/vanitty` (`%APPDATA%\Vanitty` on Windows) are kept.
 
 Every [GitHub release](https://github.com/stasadance/vanitty/releases/latest) has:
 
-| Platform | Files |
-| --- | --- |
-| Windows | `.exe` (per-user setup), `.msi` |
-| macOS (Apple Silicon and Intel) | `.dmg` |
-| Debian, Ubuntu | `.deb` |
-| Fedora, openSUSE | `.rpm` |
-| Any Linux | `.AppImage` |
+| Platform                        | Files                           |
+| ------------------------------- | ------------------------------- |
+| Windows                         | `.exe` (per-user setup), `.msi` |
+| macOS (Apple Silicon and Intel) | `.dmg`                          |
+| Debian, Ubuntu                  | `.deb`                          |
+| Fedora, openSUSE                | `.rpm`                          |
+| Any Linux                       | `.AppImage`                     |
 
 The macOS build isn't notarized yet, so macOS blocks a downloaded `.dmg` on first launch (the install script avoids this). After moving Vanitty to Applications, either open it once, then click **Open Anyway** in System Settings > Privacy & Security, or run:
 

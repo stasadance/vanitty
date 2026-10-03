@@ -5,101 +5,101 @@ name: Release
 # (the PR `pnpm release` opens), or by hand from the Actions tab. Skips when
 # the version in package.json is already released.
 on:
-  push:
-    branches: [main]
-    paths: [package.json]
-  workflow_dispatch:
+    push:
+        branches: [main]
+        paths: [package.json]
+    workflow_dispatch:
 
 permissions:
-  contents: write
+    contents: write
 
 concurrency:
-  group: release-${{ github.ref }}
+    group: release-${{ github.ref }}
 
 jobs:
-  version:
-    runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.tag.outputs.name }}
-      released: ${{ steps.tag.outputs.released }}
-      release-id: ${{ steps.release.outputs.id }}
-    steps:
-      - uses: actions/checkout@v7
-      - name: Resolve tag
-        id: tag
-        run: |
-          tag="v$(node -p "require('./package.json').version")"
-          echo "name=$tag" >> "$GITHUB_OUTPUT"
-          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
-            echo "released=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "released=false" >> "$GITHUB_OUTPUT"
-          fi
+    version:
+        runs-on: ubuntu-latest
+        outputs:
+            tag: ${{ steps.tag.outputs.name }}
+            released: ${{ steps.tag.outputs.released }}
+            release-id: ${{ steps.release.outputs.id }}
+        steps:
+            - uses: actions/checkout@v7
+            - name: Resolve tag
+              id: tag
+              run: |
+                  tag="v$(node -p "require('./package.json').version")"
+                  echo "name=$tag" >> "$GITHUB_OUTPUT"
+                  if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+                    echo "released=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "released=false" >> "$GITHUB_OUTPUT"
+                  fi
 
-      # Created once here rather than by each build job: tauri-action updates
-      # an existing release without regenerating its notes, so the second and
-      # third builds would wipe them.
-      - name: Create release
-        id: release
-        if: steps.tag.outputs.released == 'false'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.tag.outputs.name }}
-        run: |
-          id=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
-            -f tag_name="$TAG" -f target_commitish="$GITHUB_SHA" -f name="Vanitty $TAG" \
-            -f body="See the assets below to download and install Vanitty." \
-            -F generate_release_notes=true --jq .id)
-          echo "id=$id" >> "$GITHUB_OUTPUT"
+            # Created once here rather than by each build job: tauri-action updates
+            # an existing release without regenerating its notes, so the second and
+            # third builds would wipe them.
+            - name: Create release
+              id: release
+              if: steps.tag.outputs.released == 'false'
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  TAG: ${{ steps.tag.outputs.name }}
+              run: |
+                  id=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
+                    -f tag_name="$TAG" -f target_commitish="$GITHUB_SHA" -f name="Vanitty $TAG" \
+                    -f body="See the assets below to download and install Vanitty." \
+                    -F generate_release_notes=true --jq .id)
+                  echo "id=$id" >> "$GITHUB_OUTPUT"
 
-  build:
-    needs: version
-    if: needs.version.outputs.released == 'false'
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: ubuntu-22.04
-          - platform: windows-latest
-          # One universal app for Apple Silicon and Intel Macs.
-          - platform: macos-latest
-            args: --target universal-apple-darwin
-            targets: aarch64-apple-darwin,x86_64-apple-darwin
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - uses: actions/checkout@v7
+    build:
+        needs: version
+        if: needs.version.outputs.released == 'false'
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - platform: ubuntu-22.04
+                    - platform: windows-latest
+                    # One universal app for Apple Silicon and Intel Macs.
+                    - platform: macos-latest
+                      args: --target universal-apple-darwin
+                      targets: aarch64-apple-darwin,x86_64-apple-darwin
+        runs-on: ${{ matrix.platform }}
+        steps:
+            - uses: actions/checkout@v7
 
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev patchelf
+            - name: Install Linux dependencies
+              if: runner.os == 'Linux'
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev patchelf
 
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: pnpm
+            - uses: pnpm/action-setup@v6
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: 22
+                  cache: pnpm
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.targets }}
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
+            - uses: dtolnay/rust-toolchain@stable
+              with:
+                  targets: ${{ matrix.targets }}
+            - uses: Swatinem/rust-cache@v2
+              with:
+                  workspaces: src-tauri
 
-      - run: pnpm install --frozen-lockfile
+            - run: pnpm install --frozen-lockfile
 
-      - uses: tauri-apps/tauri-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Signs the update bundles that the in-app updater downloads.
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        with:
-          releaseId: ${{ needs.version.outputs.release-id }}
-          # Only used as the notes in latest.json; the release has its own.
-          releaseBody: See the assets below to download and install Vanitty.
-          # latest.json points Windows updates at the setup.exe that install.ps1 uses.
-          updaterJsonPreferNsis: true
-          args: ${{ matrix.args }}
+            - uses: tauri-apps/tauri-action@v1
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  # Signs the update bundles that the in-app updater downloads.
+                  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+                  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+              with:
+                  releaseId: ${{ needs.version.outputs.release-id }}
+                  # Only used as the notes in latest.json; the release has its own.
+                  releaseBody: See the assets below to download and install Vanitty.
+                  # latest.json points Windows updates at the setup.exe that install.ps1 uses.
+                  updaterJsonPreferNsis: true
+                  args: ${{ matrix.args }}

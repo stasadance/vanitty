@@ -12,8 +12,8 @@ const run = (cmd) => execSync(cmd, { stdio: "inherit" });
 const read = (p) => readFileSync(p, "utf8");
 
 if (execSync("git status --porcelain").toString().trim()) {
-  console.error("Commit or stash your changes first.");
-  process.exit(1);
+    console.error("Commit or stash your changes first.");
+    process.exit(1);
 }
 
 run("git fetch origin main");
@@ -28,16 +28,19 @@ const patch = curYY === yy && curMM === mm ? curPatch + 1 : 0;
 const version = `${yy}.${mm}.${patch}`;
 
 pkg.version = version;
-writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
+writeFileSync("package.json", JSON.stringify(pkg, null, 4) + "\n");
 
 const conf = JSON.parse(read("src-tauri/tauri.conf.json"));
 conf.version = version;
-writeFileSync("src-tauri/tauri.conf.json", JSON.stringify(conf, null, 2) + "\n");
+writeFileSync("src-tauri/tauri.conf.json", JSON.stringify(conf, null, 4) + "\n");
 
-writeFileSync("src-tauri/Cargo.toml", read("src-tauri/Cargo.toml").replace(/^version = ".*"$/m, `version = "${version}"`));
 writeFileSync(
-  "src-tauri/Cargo.lock",
-  read("src-tauri/Cargo.lock").replace(/(name = "vanitty"\nversion = )".*"/, `$1"${version}"`),
+    "src-tauri/Cargo.toml",
+    read("src-tauri/Cargo.toml").replace(/^version = ".*"$/m, `version = "${version}"`),
+);
+writeFileSync(
+    "src-tauri/Cargo.lock",
+    read("src-tauri/Cargo.lock").replace(/(name = "vanitty"\nversion = )".*"/, `$1"${version}"`),
 );
 
 const branch = `release/v${version}`;
@@ -48,7 +51,9 @@ run(`git push -u origin ${branch}`);
 
 const body = `Bumps the version to ${version}. Merging this releases v${version}.`;
 try {
-  run(`gh pr create --base main --head ${branch} --title "Release v${version}" --body "${body}"`);
+    run(`gh pr create --base main --head ${branch} --title "Release v${version}" --body "${body}"`);
 } catch {
-  console.log(`\nOpen the PR: https://github.com/stasadance/vanitty/compare/main...${branch}?expand=1`);
+    console.log(
+        `\nOpen the PR: https://github.com/stasadance/vanitty/compare/main...${branch}?expand=1`,
+    );
 }
