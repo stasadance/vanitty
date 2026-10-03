@@ -341,7 +341,9 @@ export class TermSession {
         const want = this.config.webGLRenderer && alpha(this.config.backgroundColor) >= 1;
         if (want && !this.webgl) {
             try {
-                const webgl = new WebglAddon();
+                // WebKitGTK shows a WebGL canvas one draw behind unless the
+                // drawing buffer is preserved, so typed text appears late.
+                const webgl = new WebglAddon(platform === "linux");
                 webgl.onContextLoss(() => {
                     webgl.dispose();
                     this.webgl = undefined;
