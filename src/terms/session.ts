@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { Terminal, type ITerminalOptions, type IDisposable } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { SearchAddon, type ISearchOptions } from "@xterm/addon-search";
@@ -7,7 +8,6 @@ import { ImageAddon } from "@xterm/addon-image";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { LigaturesAddon } from "@xterm/addon-ligatures";
 import { SerializeAddon } from "@xterm/addon-serialize";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import Color from "color";
 import type { TermConfig } from "../config/defaults";
@@ -162,7 +162,7 @@ export class TermSession {
         term.loadAddon(
             new WebLinksAddon((event, uri) => {
                 const key = this.config.webLinksActivationKey;
-                if (!key || event[`${key}Key` as "ctrlKey"]) void openUrl(uri);
+                if (!key || event[`${key}Key` as "ctrlKey"]) void invoke("open_url", { url: uri });
             }),
         );
         term.open(this.element);

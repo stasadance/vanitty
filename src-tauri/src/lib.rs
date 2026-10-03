@@ -1,4 +1,5 @@
 mod config;
+mod host;
 mod packages;
 mod pty;
 mod session;
@@ -12,7 +13,6 @@ use tauri::{Manager, RunEvent, WindowEvent};
 pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
-        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(window::state_plugin())
         .manage(pty::PtyManager::default())
@@ -30,6 +30,7 @@ pub fn run() {
             config::config_write,
             config::config_open,
             config::hyper_config_find,
+            host::open_url,
             packages::packages_install,
             packages::packages_sources,
             updater::update_check,
