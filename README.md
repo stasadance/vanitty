@@ -23,7 +23,7 @@ A fast, native terminal. A Rust + Tauri rewrite of [Hyper](https://github.com/ve
 - Drag files onto a terminal to paste their paths
 - Reopens your windows, tabs, splits, folders and terminal text on launch (`restoreSession`), and remembers window size
 - Rounded, frameless window on Linux and Windows; native rounded window on macOS
-- Hyper themes from npm, run in a sandbox, with a theme picker (Settings > Change Theme…)
+- Theme picker (Settings > Change Theme…) with built-in themes, your own JSON themes and reviewed Hyper themes; Hyper themes from npm run in a sandbox
 - Sandboxed JS plugins ([docs/plugins.md](docs/plugins.md))
 
 ## Install

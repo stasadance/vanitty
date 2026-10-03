@@ -239,6 +239,33 @@ pub async fn packages_install(
 /// Every `.js`/`.json` file under the kind's node_modules, keyed by its path
 /// relative to node_modules with `/` separators, for the worker's `require`.
 /// Local folders under `<kind>/local/<name>` appear as `@local/<name>`.
+/// Your own Vanitty themes: the JSON files in the `themes` folder of the
+/// config directory, by file name without `.json`. They're data, never code.
+#[tauri::command]
+pub fn themes_local() -> BTreeMap<String, String> {
+    let mut out = BTreeMap::new();
+    let Ok(entries) = std::fs::read_dir(config_dir().join("themes")) else {
+        return out;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("json")
+            || !entry
+                .metadata()
+                .is_ok_and(|m| m.is_file() && m.len() < 256 * 1024)
+        {
+            continue;
+        }
+        if let (Some(id), Ok(text)) = (
+            path.file_stem().and_then(|s| s.to_str()),
+            std::fs::read_to_string(&path),
+        ) {
+            out.insert(id.to_owned(), text);
+        }
+    }
+    out
+}
+
 /// A theme listed on npm, for the theme picker.
 #[derive(Serialize)]
 pub struct ThemeListing {

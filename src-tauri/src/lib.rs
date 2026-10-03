@@ -34,6 +34,7 @@ pub fn run() {
             packages::packages_install,
             packages::packages_sources,
             packages::themes_list,
+            packages::themes_local,
             updater::update_check,
             updater::update_install,
             window::window_new,
