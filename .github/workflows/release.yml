@@ -22,6 +22,7 @@ jobs:
     outputs:
       tag: ${{ steps.tag.outputs.name }}
       released: ${{ steps.tag.outputs.released }}
+      release-id: ${{ steps.release.outputs.id }}
     steps:
       - uses: actions/checkout@v7
       - name: Resolve tag
@@ -34,6 +35,22 @@ jobs:
           else
             echo "released=false" >> "$GITHUB_OUTPUT"
           fi
+
+      # Created once here rather than by each build job: tauri-action updates
+      # an existing release without regenerating its notes, so the second and
+      # third builds would wipe them.
+      - name: Create release
+        id: release
+        if: steps.tag.outputs.released == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.name }}
+        run: |
+          id=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
+            -f tag_name="$TAG" -f target_commitish="$GITHUB_SHA" -f name="Vanitty $TAG" \
+            -f body="See the assets below to download and install Vanitty." \
+            -F generate_release_notes=true --jq .id)
+          echo "id=$id" >> "$GITHUB_OUTPUT"
 
   build:
     needs: version
@@ -80,14 +97,9 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ needs.version.outputs.tag }}
-          releaseName: Vanitty ${{ needs.version.outputs.tag }}
-          releaseCommitish: ${{ github.sha }}
+          releaseId: ${{ needs.version.outputs.release-id }}
+          # Only used as the notes in latest.json; the release has its own.
           releaseBody: See the assets below to download and install Vanitty.
-          # Appends the merged PRs since the last release (see .github/release.yml).
-          generateReleaseNotes: true
-          releaseDraft: false
-          prerelease: false
           # latest.json points Windows updates at the setup.exe that install.ps1 uses.
           updaterJsonPreferNsis: true
           args: ${{ matrix.args }}
