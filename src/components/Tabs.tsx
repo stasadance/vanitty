@@ -41,8 +41,10 @@ export function Tabs({ titles, activeIndex, onNewTab }: Props) {
         const move = (ev: MouseEvent) => {
             if (!moved && Math.abs(ev.clientX - startX) < DRAG_THRESHOLD) return;
             if (!moved) {
+                // The tab you drag becomes the active one, as in browsers.
                 moved = true;
                 setDragging(root);
+                selectTab(root);
             }
             const items = [...(listRef.current?.children ?? [])];
             const over = items.findIndex((el) => ev.clientX < el.getBoundingClientRect().right);

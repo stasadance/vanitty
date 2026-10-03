@@ -18,7 +18,9 @@ export function Terms() {
             className={`terms_terms ${shifted ? "terms_termsShifted" : "terms_termsNotShifted"}`}
             style={{ marginTop: top }}
         >
-            {tabs.map((root) => (
+            {/* Stable order, not tab order: dragging tabs must not move a
+                terminal in the DOM, which can leave its WebGL canvas blank. */}
+            {[...tabs].sort().map((root) => (
                 <div
                     key={root}
                     className={`terms_termGroup ${root === activeRoot ? "terms_termGroupActive" : ""}`}
