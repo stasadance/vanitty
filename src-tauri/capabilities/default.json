@@ -18,7 +18,6 @@
         "core:window:allow-request-user-attention",
         "core:webview:allow-internal-toggle-devtools",
         "clipboard-manager:allow-read-text",
-        "clipboard-manager:allow-write-text",
-        "opener:allow-open-url"
+        "clipboard-manager:allow-write-text"
     ]
 }

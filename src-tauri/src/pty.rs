@@ -122,6 +122,12 @@ pub fn pty_spawn(
 
     let mut cmd = CommandBuilder::new(&shell);
     cmd.args(&args);
+    for (key, value) in crate::host::env_fixes() {
+        match value {
+            Some(v) => cmd.env(key, v),
+            None => cmd.env_remove(key),
+        }
+    }
     cmd.env("TERM", "xterm-256color");
     cmd.env("COLORTERM", "truecolor");
     cmd.env("TERM_PROGRAM", "Vanitty");

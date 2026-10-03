@@ -153,15 +153,12 @@ fn file_name(path: &Path) -> Option<&str> {
     path.file_name()?.to_str()
 }
 
-/// Opens a config file in the user's default editor, creating it if needed.
+/// Opens a config file in the user's code editor, creating it if needed.
 #[tauri::command]
-pub fn config_open(app: AppHandle, name: &str, fallback: &str) -> Result<(), String> {
-    use tauri_plugin_opener::OpenerExt;
+pub fn config_open(name: &str, fallback: &str) -> Result<(), String> {
     let path = config_file(name)?;
     if !path.exists() {
         config_write(name, fallback)?;
     }
-    app.opener()
-        .open_path(path.to_string_lossy(), None::<&str>)
-        .map_err(|e| e.to_string())
+    crate::host::open_in_editor(&path)
 }
