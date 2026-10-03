@@ -4,7 +4,7 @@ import { boot } from "./boot";
 import { Header, useTabTitles } from "./components/Header";
 import { Notifications } from "./components/Notifications";
 import { Terms } from "./components/Terms";
-import { isMac } from "./config/keymaps";
+import { isMac, uiScale } from "./config/keymaps";
 import { useStore } from "./store";
 
 export default function App() {
@@ -36,7 +36,8 @@ export default function App() {
                         borderColor: config.borderColor,
                         backgroundColor: config.backgroundColor,
                         borderWidth: maximized || fullScreen ? 0 : 1,
-                        "--vanitty-radius": `${config.borderRadius}px`,
+                        "--vanitty-radius": `${config.borderRadius * uiScale}px`,
+                        "--ui-scale": uiScale,
                     } as React.CSSProperties
                 }
             >
