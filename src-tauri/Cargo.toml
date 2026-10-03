@@ -1,6 +1,6 @@
 [package]
 name = "vanitty"
-version = "26.10.1"
+version = "26.10.2"
 description = "A fast, native terminal built with Rust and Tauri"
 license = "MIT"
 edition = "2024"
