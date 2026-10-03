@@ -1,0 +1,34 @@
+---
+title: Settings
+description: Configure Vanitty with settings.json.
+---
+import SettingsTable from "../../../components/SettingsTable.astro";
+
+Settings live in `~/.config/vanitty` (`%APPDATA%\Vanitty` on Windows, or `$XDG_CONFIG_HOME/vanitty`). Open them with **Settings > Open Settings** or <kbd>Ctrl</kbd>+<kbd>,</kbd> (<kbd>⌘</kbd>+<kbd>,</kbd> on macOS).
+
+`settings.json` takes the same options as Hyper's `config`, as JSON with comments. A JSON schema sits next to it, so VS Code autocompletes and validates it. Changes apply as soon as you save.
+
+```jsonc
+{
+  "$schema": "./settings.schema.json",
+  "fontSize": 13,
+  "cursorShape": "BLOCK",
+  "padding": "12px 14px",
+  "themes": ["hyper-snazzy"]
+}
+```
+
+## Profiles
+
+A profile overrides any terminal option, such as the shell or colors. Pick one from the new-tab menu, or set `defaultProfile`.
+
+```jsonc
+"profiles": [
+  { "name": "zsh", "config": { "shell": "/bin/zsh" } },
+  { "name": "PowerShell", "config": { "shell": "pwsh.exe", "backgroundColor": "#012456" } }
+]
+```
+
+## Reference
+
+<SettingsTable />
