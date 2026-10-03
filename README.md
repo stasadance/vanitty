@@ -90,13 +90,15 @@ Both reload as soon as you save. On first run, Vanitty imports your Hyper config
 
 ### Themes
 
-Add Hyper theme packages from npm:
+"Settings > Change Theme…" lists built-in themes, your own, and reviewed Hyper themes pinned to a checked version, plus the rest of npm's Hyper themes.
+
+Your own themes are JSON files in `themes/`, picked with `"colorTheme": "<file name>"`. They hold colors and optional CSS, so nothing runs. Hyper themes from npm still work:
 
 ```jsonc
 "themes": ["hyper-snazzy"]
 ```
 
-They're downloaded into `themes/` and their `decorateConfig` runs in a Web Worker with no DOM, network or IPC access. Theme CSS works because Vanitty uses Hyper's class names.
+They're downloaded into `themes/` without running npm, and their `decorateConfig` runs in a Web Worker with no DOM, network or IPC access. Any theme can only change colors, CSS, fonts, padding and the cursor, never your shell or plugins. Theme CSS works because Vanitty uses Hyper's class names. See [Themes](https://vanitty.dev/docs/themes/) for the JSON format.
 
 ### Not supported (yet)
 

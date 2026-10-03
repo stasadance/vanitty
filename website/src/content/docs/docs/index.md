@@ -17,7 +17,7 @@ Vanitty is a fast, native terminal. It's a Rust and Tauri rewrite of [Hyper](htt
 - Zoom, full screen, always on top, copy on select, quick edit, bell sound
 - Drag files onto a terminal to paste their paths
 - Rounded, frameless window on Linux and Windows; native rounded window on macOS
-- [Hyper themes](/docs/themes/) from npm, run in a sandbox
+- [Theme picker](/docs/themes/) with built-in themes, your own JSON themes and reviewed Hyper themes; Hyper themes from npm run in a sandbox
 - [Sandboxed JS plugins](/docs/plugins/)
 
 ## Not supported (yet)
