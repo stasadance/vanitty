@@ -609,6 +609,7 @@ body,
 .theme_picker_item {
     display: grid;
     grid-template-columns: 1fr auto;
+    align-items: center;
     gap: 2px 12px;
     padding: 6px 12px;
     cursor: pointer;
@@ -618,6 +619,14 @@ body,
 .theme_picker_downloads,
 .theme_picker_description,
 .theme_picker_status {
+    opacity: 0.6;
+}
+
+.theme_picker_type {
+    font-size: 10px;
+    padding: 1px 6px;
+    border: 1px solid currentColor;
+    border-radius: 8px;
     opacity: 0.6;
 }
 

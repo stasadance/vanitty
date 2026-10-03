@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import Color from "color";
 import { parse, type ParseError } from "jsonc-parser";
 
 /**
@@ -10,6 +11,8 @@ export interface VanittyTheme {
     /** File name without `.json`; what `colorTheme` in settings.json names. */
     id: string;
     name: string;
+    /** From the file's `type`, else worked out from its background color. */
+    type?: "light" | "dark";
     author?: string;
     /** Shipped with Vanitty, rather than a file in your themes folder. */
     builtin: boolean;
@@ -21,10 +24,20 @@ const BUILTIN = import.meta.glob<Record<string, unknown>>("./builtin/*.json", {
     import: "default",
 });
 
+function themeType(data: Record<string, unknown>): VanittyTheme["type"] {
+    if (data.type === "light" || data.type === "dark") return data.type;
+    try {
+        return Color(data.backgroundColor as string).isLight() ? "light" : "dark";
+    } catch {
+        return undefined;
+    }
+}
+
 function fromData(id: string, data: Record<string, unknown>, builtin: boolean): VanittyTheme {
     return {
         id,
         name: typeof data.name === "string" && data.name ? data.name : id,
+        type: themeType(data),
         author: typeof data.author === "string" ? data.author : undefined,
         builtin,
         settings: data,

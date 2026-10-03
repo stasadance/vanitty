@@ -267,7 +267,7 @@ pub fn themes_local() -> BTreeMap<String, String> {
 }
 
 /// A theme listed on npm, for the theme picker.
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ThemeListing {
     name: String,
     description: String,
@@ -301,36 +301,105 @@ struct Downloads {
     monthly: u64,
 }
 
-/// Packages tagged `hyper-theme` on npm, most downloaded first.
+/// The npm theme list as last fetched, so the picker doesn't ask npm again.
+#[derive(Serialize, Deserialize)]
+struct ThemeCache {
+    /// Unix seconds.
+    fetched: u64,
+    themes: Vec<ThemeListing>,
+}
+
+/// npm's search API rate-limits hard; the theme list barely changes in a day.
+const THEME_CACHE_SECS: u64 = 24 * 60 * 60;
+
+/// One fetch at a time, so opening the picker twice doesn't ask npm twice.
+static THEME_FETCH: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+fn theme_cache_path() -> PathBuf {
+    dirs::cache_dir()
+        .unwrap_or_else(|| config_dir().join("cache"))
+        .join("vanitty")
+        .join("npm-themes.json")
+}
+
+fn now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs())
+}
+
+fn read_theme_cache(path: &Path) -> Option<ThemeCache> {
+    serde_json::from_str(&std::fs::read_to_string(path).ok()?).ok()
+}
+
+fn write_theme_cache(path: &Path, cache: &ThemeCache) {
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    if let Ok(json) = serde_json::to_string(cache) {
+        let _ = std::fs::write(path, json);
+    }
+}
+
+fn cache_is_fresh(cache: &ThemeCache, now: u64) -> bool {
+    now.saturating_sub(cache.fetched) < THEME_CACHE_SECS && cache.fetched <= now
+}
+
+fn fetch_theme_list() -> Result<Vec<ThemeListing>, String> {
+    const PAGE: usize = 250;
+    let agent = agent();
+    let mut themes = Vec::new();
+    // The search API returns at most 250 per page; stop at a sane limit.
+    for from in (0..1000).step_by(PAGE) {
+        let url =
+            format!("{REGISTRY}/-/v1/search?text=keywords:hyper-theme&size={PAGE}&from={from}");
+        let page: SearchPage = match agent.get(&url).call() {
+            Ok(mut res) => res.body_mut().read_json().map_err(|e| e.to_string())?,
+            Err(ureq::Error::StatusCode(429)) => {
+                return Err(
+                    "npm is limiting requests right now. Try again in a few minutes.".into(),
+                );
+            }
+            Err(e) => return Err(e.to_string()),
+        };
+        let done = page.objects.len() < PAGE || from + PAGE >= page.total;
+        themes.extend(page.objects.into_iter().map(|o| ThemeListing {
+            name: o.package.name,
+            description: o.package.description.unwrap_or_default(),
+            downloads: o.downloads.map_or(0, |d| d.monthly),
+        }));
+        if done {
+            break;
+        }
+    }
+    themes.sort_by_key(|t| std::cmp::Reverse(t.downloads));
+    Ok(themes)
+}
+
+/// Packages tagged `hyper-theme` on npm, most downloaded first. Served from a
+/// day-old cache when there is one, and from an older one if npm fails.
 #[tauri::command]
 pub async fn themes_list() -> Result<Vec<ThemeListing>, String> {
     tauri::async_runtime::spawn_blocking(|| {
-        const PAGE: usize = 250;
-        let agent = agent();
-        let mut themes = Vec::new();
-        // The search API returns at most 250 per page; stop at a sane limit.
-        for from in (0..1000).step_by(PAGE) {
-            let url =
-                format!("{REGISTRY}/-/v1/search?text=keywords:hyper-theme&size={PAGE}&from={from}");
-            let page: SearchPage = agent
-                .get(&url)
-                .call()
-                .map_err(|e| e.to_string())?
-                .body_mut()
-                .read_json()
-                .map_err(|e| e.to_string())?;
-            let done = page.objects.len() < PAGE || from + PAGE >= page.total;
-            themes.extend(page.objects.into_iter().map(|o| ThemeListing {
-                name: o.package.name,
-                description: o.package.description.unwrap_or_default(),
-                downloads: o.downloads.map_or(0, |d| d.monthly),
-            }));
-            if done {
-                break;
-            }
+        let _one_at_a_time = THEME_FETCH.lock().unwrap_or_else(|e| e.into_inner());
+        let path = theme_cache_path();
+        let cached = read_theme_cache(&path);
+        if let Some(cache) = cached.as_ref().filter(|c| cache_is_fresh(c, now_secs())) {
+            return Ok(cache.themes.clone());
         }
-        themes.sort_by_key(|t| std::cmp::Reverse(t.downloads));
-        Ok(themes)
+        match fetch_theme_list() {
+            Ok(themes) => {
+                write_theme_cache(
+                    &path,
+                    &ThemeCache {
+                        fetched: now_secs(),
+                        themes: themes.clone(),
+                    },
+                );
+                Ok(themes)
+            }
+            Err(e) => cached.map(|c| c.themes).ok_or(e),
+        }
     })
     .await
     .map_err(|e| e.to_string())?
@@ -377,6 +446,30 @@ fn collect(root: &Path, dir: &Path, prefix: &str, out: &mut BTreeMap<String, Str
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn theme_cache_round_trips_and_expires() {
+        let path = std::env::temp_dir()
+            .join(format!("vanitty-cache-{}", std::process::id()))
+            .join("npm-themes.json");
+        let cache = ThemeCache {
+            fetched: 1_000_000,
+            themes: vec![ThemeListing {
+                name: "hyper-snazzy".into(),
+                description: "Elegant".into(),
+                downloads: 42,
+            }],
+        };
+        write_theme_cache(&path, &cache);
+        let read = read_theme_cache(&path).unwrap();
+        assert_eq!(read.fetched, 1_000_000);
+        assert_eq!(read.themes[0].name, "hyper-snazzy");
+        assert!(cache_is_fresh(&read, 1_000_000 + 60));
+        assert!(!cache_is_fresh(&read, 1_000_000 + THEME_CACHE_SECS));
+        // A clock that went backwards doesn't keep a cache forever.
+        assert!(!cache_is_fresh(&read, 1_000));
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
 
     #[test]
     fn splits_specs() {

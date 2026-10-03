@@ -23,7 +23,19 @@ interface Item {
     /** What picking it saves. */
     choice: { colorTheme?: string; themes?: string[] };
     current: boolean;
+    type?: "light" | "dark";
     downloads?: number;
+}
+
+/** Fetched once per run; Rust also keeps it on disk for a day. */
+let npmThemes: Promise<Listing[]> | undefined;
+
+function loadNpmThemes() {
+    npmThemes ??= invoke<Listing[]>("themes_list").catch((e) => {
+        npmThemes = undefined;
+        throw e;
+    });
+    return npmThemes;
 }
 
 function close() {
@@ -62,10 +74,11 @@ export function ThemePicker() {
                     group: "Vanitty themes",
                     choice: { colorTheme: t.id },
                     current: false,
+                    type: t.type,
                 })),
             ),
         );
-        invoke<Listing[]>("themes_list")
+        loadNpmThemes()
             .then(setNpm)
             .catch((e) => setError(`Couldn't load more themes from npm: ${e}`));
     }, []);
@@ -95,6 +108,7 @@ export function ThemePicker() {
                 group: "Hyper themes",
                 choice: { themes: [t.spec] },
                 current: hyperCurrent.has(name),
+                type: t.type,
             };
         }),
         ...(npm ?? [])
@@ -111,7 +125,11 @@ export function ThemePicker() {
     ];
     const q = query.trim().toLowerCase();
     const items = all.filter(
-        (t) => !q || t.label.toLowerCase().includes(q) || t.description.toLowerCase().includes(q),
+        (t) =>
+            !q ||
+            t.label.toLowerCase().includes(q) ||
+            t.description.toLowerCase().includes(q) ||
+            t.type === q,
     );
 
     const pick = (t: Item) => {
@@ -177,6 +195,11 @@ export function ThemePicker() {
                                         <span className="theme_picker_current"> current</span>
                                     )}
                                 </span>
+                                {t.type && (
+                                    <span className="theme_picker_type">
+                                        {t.type === "light" ? "Light" : "Dark"}
+                                    </span>
+                                )}
                                 {!!t.downloads && (
                                     <span className="theme_picker_downloads">
                                         {shortCount(t.downloads)}/mo

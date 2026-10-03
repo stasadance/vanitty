@@ -7,7 +7,7 @@ Open **Settings > Change Theme…** (or right-click the title bar) to pick one. 
 
 - **Vanitty themes**: built-in themes and your own. They're plain JSON, so nothing runs.
 - **Hyper themes**: popular Hyper themes, reviewed and pinned to a checked version.
-- **More on npm**: every other package tagged `hyper-theme`. These aren't reviewed.
+- **More on npm**: every other package tagged `hyper-theme`. These aren't reviewed. The list is fetched from npm at most once a day.
 
 Picking a theme saves it to `settings.json` and applies it right away.
 
@@ -19,6 +19,7 @@ A Vanitty theme is a JSON file in the `themes/` folder of your config directory.
 // themes/midnight.json
 {
     "name": "Midnight",
+    "type": "dark",
     "backgroundColor": "#0b0e14",
     "foregroundColor": "#c7c7c7",
     "cursorColor": "#f81ce5",
@@ -33,7 +34,7 @@ A Vanitty theme is a JSON file in the `themes/` folder of your config directory.
 "colorTheme": "midnight"
 ```
 
-A theme can set colors, `css`, `termCSS`, fonts, `padding` and the cursor shape. Anything else in the file is ignored.
+`type` (`"light"` or `"dark"`) tags it in the picker; without it, Vanitty works it out from `backgroundColor`. A theme can set colors, `css`, `termCSS`, fonts, `padding` and the cursor shape. Anything else in the file is ignored.
 
 ## Hyper themes
 
