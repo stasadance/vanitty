@@ -69,6 +69,7 @@ export const SETTINGS_SCHEMA = {
     showWindowControls: { enum: ["", true, false, "left"], description: "Show window controls (Linux and Windows), optionally on the left." },
     borderRadius: num("Window corner radius in pixels (Linux and Windows; macOS uses the system corners)."),
     preserveCWD: bool("Open new tabs and splits in the current directory."),
+    restoreSession: bool("Reopen your windows, tabs, splits, folders and terminal text on launch."),
     defaultProfile: str("Profile used for new tabs."),
     profiles: {
       type: "array",
