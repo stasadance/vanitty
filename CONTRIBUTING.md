@@ -10,28 +10,22 @@ For a large change, open an issue first so we can agree on the approach before y
 
 ## Setting up
 
-Requires Rust, Node 22+, pnpm, and the [Tauri prerequisites](https://tauri.app/start/prerequisites/).
+Requires Rust, Node 22+, pnpm, [just](https://github.com/casey/just), and the [Tauri prerequisites](https://tauri.app/start/prerequisites/).
 
 ```sh
-pnpm install
-pnpm tauri dev
+just install
+just dev
 ```
+
+Common tasks are recipes in the `justfile`; run `just` to list them.
 
 The frontend (React 19, Zustand, xterm.js) is in `src/`. The Rust side (PTY, config files, window) is in `src-tauri/src/`. Plugin docs are in [`docs/plugins.md`](docs/plugins.md).
 
 ## Before opening a pull request
 
-Run these and make sure they pass (`just check` runs them all, `just format` fixes formatting):
+Run `just check` and make sure it passes. It runs the same typecheck, format, clippy and test steps as CI. `just format` fixes formatting.
 
-```sh
-pnpm typecheck
-pnpm format:check
-cargo fmt --manifest-path src-tauri/Cargo.toml --check
-cargo clippy --manifest-path src-tauri/Cargo.toml
-cargo test --manifest-path src-tauri/Cargo.toml
-```
-
-Then try your change in `pnpm tauri dev`. Say in the pull request which OS you tested on.
+Then try your change in `just dev`. Say in the pull request which OS you tested on.
 
 ## Pull requests
 
