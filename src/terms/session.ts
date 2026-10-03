@@ -8,6 +8,7 @@ import { ImageAddon } from "@xterm/addon-image";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { LigaturesAddon } from "@xterm/addon-ligatures";
 import { SerializeAddon } from "@xterm/addon-serialize";
+import { ClipboardAddon, type IClipboardProvider } from "@xterm/addon-clipboard";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import Color from "color";
 import type { TermConfig } from "../config/defaults";
@@ -22,6 +23,18 @@ import {
     type Exited,
     type SpawnOptions,
 } from "./pty";
+
+/**
+ * Lets programs copy to the clipboard with OSC 52, which is how tmux, vim and
+ * ssh sessions copy. Programs can't read the clipboard: a read gets nothing.
+ * The Linux primary selection (`p` alone) isn't reachable, so it's skipped.
+ */
+const osc52: IClipboardProvider = {
+    readText: () => "",
+    writeText: (selection, text) => {
+        if (selection !== "p") return writeText(text);
+    },
+};
 
 const CURSOR_STYLES = { BEAM: "bar", UNDERLINE: "underline", BLOCK: "block" } as const;
 
@@ -159,6 +172,7 @@ export class TermSession {
         const { term } = this;
         term.loadAddon(this.fit);
         term.loadAddon(this.search);
+        term.loadAddon(new ClipboardAddon(undefined, osc52));
         term.loadAddon(
             new WebLinksAddon((event, uri) => {
                 const key = this.config.webLinksActivationKey;
