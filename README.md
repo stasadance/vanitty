@@ -120,3 +120,7 @@ Versions are `YY.MM.PATCH`; PATCH starts at 0 each month. `just release` (or `pn
 Tauri v2, `portable-pty`, xterm.js, React 19 with the React Compiler, Zustand.
 
 FiraCode Nerd Font Mono is © The Fira Code Project Authors and Nerd Fonts, under the SIL Open Font License 1.1 (`public/fonts/LICENSE-FiraCode-NerdFont.txt`).
+
+## Support
+
+Vanitty is free and open source. If it's part of your day, [sponsoring on GitHub](https://github.com/sponsors/stasadance) helps fund fixes, new features and releases.
