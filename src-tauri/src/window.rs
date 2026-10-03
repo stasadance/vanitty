@@ -22,7 +22,15 @@ pub fn create(app: &AppHandle) -> tauri::Result<WebviewWindow> {
     #[cfg(not(target_os = "macos"))]
     let builder = builder.decorations(false).transparent(true);
 
-    builder.build()
+    let window = builder.build()?;
+
+    // Hyper zooms its page to 1.2 on Linux to get a normal default size there,
+    // which is the look people expect. WebKitGTK counts page zoom in
+    // devicePixelRatio, so the terminal still renders sharp.
+    #[cfg(target_os = "linux")]
+    window.set_zoom(1.2)?;
+
+    Ok(window)
 }
 
 #[tauri::command]
