@@ -2,7 +2,7 @@
 //! config files. Each one gets the user's own environment, not the one the
 //! AppImage launcher sets up for Vanitty.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 /// The environment changes every program Vanitty starts needs. Empty unless
@@ -129,7 +129,7 @@ fn open_with_code_editor(path: &Path) -> bool {
 /// Default install locations of VS Code and its relatives.
 #[cfg(windows)]
 fn open_with_code_editor(path: &Path) -> bool {
-    use std::path::PathBuf;
+    use PathBuf;
     let local = std::env::var_os("LOCALAPPDATA").map(PathBuf::from);
     let program_files = std::env::var_os("ProgramFiles").map(PathBuf::from);
     let candidates = [
@@ -185,7 +185,7 @@ pub fn open_url(url: String) -> Result<(), String> {
 #[tauri::command]
 pub fn path_links(cwd: Option<String>, paths: Vec<String>) -> Vec<Option<String>> {
     let home = std::env::home_dir().unwrap_or_default();
-    let base = cwd.map_or_else(|| home.clone(), std::path::PathBuf::from);
+    let base = cwd.map_or_else(|| home.clone(), PathBuf::from);
     paths
         .iter()
         .map(|p| {
@@ -195,7 +195,7 @@ pub fn path_links(cwd: Option<String>, paths: Vec<String>) -> Vec<Option<String>
         .collect()
 }
 
-fn resolve(base: &Path, home: &Path, path: &str) -> std::path::PathBuf {
+fn resolve(base: &Path, home: &Path, path: &str) -> PathBuf {
     if path == "~" {
         return home.to_path_buf();
     }
@@ -205,49 +205,73 @@ fn resolve(base: &Path, home: &Path, path: &str) -> std::path::PathBuf {
     }
 }
 
-/// Opens a file or folder clicked in a terminal with the system default app.
-/// Programs are refused, so a click can't run something.
-#[tauri::command]
-pub fn open_path(path: String) -> Result<(), String> {
-    let path = Path::new(&path);
-    let meta =
-        std::fs::metadata(path).map_err(|e| format!("Can't open {}: {e}", path.display()))?;
-    if is_program(path, &meta) {
-        return Err(format!(
-            "Not opening {}: it's a program, and clicking a path never runs one.",
-            path.display()
-        ));
-    }
-    open(&path.to_string_lossy())
+/// What a click on a path in the terminal opens.
+#[derive(Debug, PartialEq)]
+enum PathTarget {
+    /// A file, opened in a code editor.
+    Editor(PathBuf),
+    /// A folder, opened in the file manager.
+    Folder(PathBuf),
 }
 
-/// Extensions the system default app would run rather than show.
-const PROGRAM_EXTENSIONS: &[&str] = &[
-    // Windows
-    "exe", "com", "bat", "cmd", "ps1", "msi", "msix", "appx", "lnk", "url", "scr", "pif", "vbs",
-    "vbe", "js", "jse", "wsf", "wsh", "hta", "cpl", "msc", "reg", "jar", // macOS
-    "app", "command", "tool", "terminal", "workflow", "pkg", "mpkg", // Linux
-    "desktop", "appimage", "run",
-];
-
-fn is_program(path: &Path, meta: &std::fs::Metadata) -> bool {
-    let ext = path
-        .extension()
-        .map(|e| e.to_string_lossy().to_ascii_lowercase())
-        .unwrap_or_default();
-    if PROGRAM_EXTENSIONS.contains(&ext.as_str()) {
-        return true;
+/// Files only ever go to a code editor and folders to the file manager, so a
+/// click can't run anything. The system default app for a file can be an
+/// interpreter (a `.sh` with Git Bash or a `.py` on Windows), and opening a
+/// bundle folder like `Foo.app` on macOS launches it. Symlinks are resolved
+/// first, so a harmless-looking name can't point at a bundle.
+fn path_target(path: &Path, bundles_launch: bool) -> std::io::Result<PathTarget> {
+    let path = real_path(path)?;
+    if std::fs::metadata(&path)?.is_dir() {
+        Ok(PathTarget::Folder(safe_folder(&path, bundles_launch)))
+    } else {
+        Ok(PathTarget::Editor(path))
     }
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        if meta.is_file() && meta.permissions().mode() & 0o111 != 0 {
-            return true;
+}
+
+/// The absolute path with symlinks resolved. On Windows without the `\\?\`
+/// prefix, which editors and Explorer don't all accept.
+fn real_path(path: &Path) -> std::io::Result<PathBuf> {
+    let path = std::fs::canonicalize(path)?;
+    if cfg!(windows) {
+        let s = path.to_string_lossy();
+        if let Some(rest) = s.strip_prefix(r"\\?\").filter(|r| r.get(1..2) == Some(":")) {
+            return Ok(PathBuf::from(rest));
         }
     }
-    #[cfg(not(unix))]
-    let _ = meta;
-    false
+    Ok(path)
+}
+
+/// `dir`, or on macOS the nearest folder above it that isn't a bundle.
+fn safe_folder(dir: &Path, bundles_launch: bool) -> PathBuf {
+    let mut dir = dir;
+    if bundles_launch {
+        while dir.extension().is_some() {
+            match dir.parent() {
+                Some(parent) => dir = parent,
+                None => break,
+            }
+        }
+    }
+    dir.to_path_buf()
+}
+
+/// Opens a file or folder clicked in a terminal. Files open in a code editor;
+/// without one, their folder opens instead. Nothing is ever run.
+#[tauri::command]
+pub fn open_path(path: String) -> Result<(), String> {
+    let bundles_launch = cfg!(target_os = "macos");
+    let target = path_target(Path::new(&path), bundles_launch)
+        .map_err(|e| format!("Can't open {path}: {e}"))?;
+    let folder = match target {
+        PathTarget::Folder(dir) => dir,
+        PathTarget::Editor(file) => {
+            if open_with_code_editor(&file) {
+                return Ok(());
+            }
+            safe_folder(file.parent().unwrap_or(&file), bundles_launch)
+        }
+    };
+    open(&folder.to_string_lossy())
 }
 
 /// Variables the AppImage runtime and its launch scripts set for Vanitty
@@ -307,34 +331,136 @@ mod tests {
         assert_eq!(resolve(base, home, "~"), Path::new("/home/me"));
     }
 
-    #[test]
-    fn refuses_programs() {
-        let dir = std::env::temp_dir().join(format!("vanitty-open-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        let text = dir.join("notes.txt");
-        let app = dir.join("Setup.EXE");
-        std::fs::write(&text, "hi").unwrap();
-        std::fs::write(&app, "hi").unwrap();
-        let meta = |p: &Path| std::fs::metadata(p).unwrap();
-        assert!(!is_program(&text, &meta(&text)));
-        assert!(is_program(&app, &meta(&app)));
-        assert!(!is_program(&dir, &meta(&dir)));
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let script = dir.join("build");
-            std::fs::write(&script, "#!/bin/sh").unwrap();
-            std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).unwrap();
-            assert!(is_program(&script, &meta(&script)));
-        }
-        std::fs::remove_dir_all(&dir).unwrap();
-    }
-
     fn vars(list: &[(&str, &str)]) -> impl Iterator<Item = (String, String)> {
         list.iter()
             .map(|(k, v)| (k.to_string(), v.to_string()))
             .collect::<Vec<_>>()
             .into_iter()
+    }
+
+    /// A scratch folder for one test, removed when dropped.
+    struct Scratch(PathBuf);
+
+    impl Scratch {
+        fn new(name: &str) -> Self {
+            let dir = std::env::temp_dir().join(format!("vanitty-{name}-{}", std::process::id()));
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir_all(&dir).unwrap();
+            Scratch(real_path(&dir).unwrap())
+        }
+
+        fn file(&self, name: &str) -> PathBuf {
+            let path = self.0.join(name);
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(&path, "#!/bin/sh\necho hi\n").unwrap();
+            path
+        }
+
+        fn dir(&self, name: &str) -> PathBuf {
+            let path = self.0.join(name);
+            std::fs::create_dir_all(&path).unwrap();
+            path
+        }
+    }
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn files_only_go_to_the_editor() {
+        let s = Scratch::new("files");
+        // Scripts, programs and installers would run with their default app.
+        for name in [
+            "notes.txt",
+            "deploy.sh",
+            "build",
+            "script.py",
+            "Setup.exe",
+            "run.bat",
+            "x.ps1",
+            "tool.command",
+            "app.desktop",
+            "App.AppImage",
+            "shortcut.lnk",
+        ] {
+            let file = s.file(name);
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o755)).unwrap();
+            }
+            for bundles_launch in [false, true] {
+                assert_eq!(
+                    path_target(&file, bundles_launch).unwrap(),
+                    PathTarget::Editor(file.clone()),
+                    "{name}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn folders_go_to_the_file_manager() {
+        let s = Scratch::new("folders");
+        let plain = s.dir("project");
+        assert_eq!(
+            path_target(&plain, true).unwrap(),
+            PathTarget::Folder(plain)
+        );
+        let dotted = s.dir("my.project");
+        assert_eq!(
+            path_target(&dotted, false).unwrap(),
+            PathTarget::Folder(dotted.clone())
+        );
+    }
+
+    #[test]
+    fn bundles_are_never_opened() {
+        let s = Scratch::new("bundles");
+        let app = s.dir("Apps/Foo.app");
+        let apps = s.0.join("Apps");
+        // Opening Foo.app on macOS would launch it; its folder opens instead.
+        assert_eq!(
+            path_target(&app, true).unwrap(),
+            PathTarget::Folder(apps.clone())
+        );
+        let nested = s.dir("Apps/Foo.app/Contents/Plugins/Bar.plugin");
+        assert_eq!(
+            path_target(&nested, true).unwrap(),
+            PathTarget::Folder(s.0.join("Apps/Foo.app/Contents/Plugins"))
+        );
+        // A file's fallback folder skips the bundle it sits in.
+        let plist = s.file("Apps/Foo.app/Info.plist");
+        assert_eq!(safe_folder(plist.parent().unwrap(), true), apps);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn symlinks_are_resolved_first() {
+        let s = Scratch::new("links");
+        let app = s.dir("Apps/Foo.app");
+        let script = s.file("deploy.sh");
+        let to_app = s.0.join("notes");
+        let to_script = s.0.join("readme");
+        std::os::unix::fs::symlink(&app, &to_app).unwrap();
+        std::os::unix::fs::symlink(&script, &to_script).unwrap();
+        assert_eq!(
+            path_target(&to_app, true).unwrap(),
+            PathTarget::Folder(s.0.join("Apps"))
+        );
+        assert_eq!(
+            path_target(&to_script, true).unwrap(),
+            PathTarget::Editor(script)
+        );
+    }
+
+    #[test]
+    fn missing_paths_fail() {
+        let s = Scratch::new("missing");
+        assert!(path_target(&s.0.join("nope.txt"), false).is_err());
     }
 
     #[test]

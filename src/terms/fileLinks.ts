@@ -36,8 +36,9 @@ function lineText(line: IBufferLine, cols: number) {
 
 /**
  * Makes paths printed in the terminal clickable with Cmd/Ctrl+Click: files
- * and folders open in their default app. Relative paths resolve against the
- * shell's current directory, and only paths that exist become links.
+ * open in a code editor and folders in the file manager (see `open_path`).
+ * Relative paths resolve against the shell's current directory, and only
+ * paths that exist become links.
  */
 export function fileLinkProvider(
     term: Terminal,
