@@ -133,6 +133,9 @@ export const SETTINGS_SCHEMA = {
             items: { type: "string" },
             description: "Plugin folders inside the plugins/local folder of your config directory.",
         },
+        colorTheme: str(
+            'A Vanitty theme: a built-in one like "catppuccin-mocha", or the name of a JSON file in the themes folder. Pick one with Change Theme….',
+        ),
         themes: {
             type: "array",
             items: { type: "string" },

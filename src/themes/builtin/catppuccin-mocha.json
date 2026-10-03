@@ -1,0 +1,32 @@
+{
+    "name": "Catppuccin Mocha",
+    "type": "dark",
+    "author": "Catppuccin",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2021 Catppuccin",
+    "source": "https://github.com/catppuccin/palette",
+    "backgroundColor": "#1e1e2e",
+    "foregroundColor": "#cdd6f4",
+    "selectionColor": "#313244",
+    "cursorColor": "#f5e0dc",
+    "cursorAccentColor": "#1e1e2e",
+    "borderColor": "#313244",
+    "colors": {
+        "black": "#45475a",
+        "lightBlack": "#585b70",
+        "red": "#f38ba8",
+        "lightRed": "#f37799",
+        "green": "#a6e3a1",
+        "lightGreen": "#89d88b",
+        "yellow": "#f9e2af",
+        "lightYellow": "#ebd391",
+        "blue": "#89b4fa",
+        "lightBlue": "#74a8fc",
+        "magenta": "#f5c2e7",
+        "lightMagenta": "#f2aede",
+        "cyan": "#94e2d5",
+        "lightCyan": "#6bd7ca",
+        "white": "#a6adc8",
+        "lightWhite": "#bac2de"
+    }
+}

@@ -1,0 +1,32 @@
+{
+    "name": "Catppuccin Latte",
+    "type": "light",
+    "author": "Catppuccin",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2021 Catppuccin",
+    "source": "https://github.com/catppuccin/palette",
+    "backgroundColor": "#eff1f5",
+    "foregroundColor": "#4c4f69",
+    "selectionColor": "#ccd0da",
+    "cursorColor": "#dc8a78",
+    "cursorAccentColor": "#eff1f5",
+    "borderColor": "#ccd0da",
+    "colors": {
+        "black": "#5c5f77",
+        "lightBlack": "#6c6f85",
+        "red": "#d20f39",
+        "lightRed": "#de293e",
+        "green": "#40a02b",
+        "lightGreen": "#49af3d",
+        "yellow": "#df8e1d",
+        "lightYellow": "#eea02d",
+        "blue": "#1e66f5",
+        "lightBlue": "#456eff",
+        "magenta": "#ea76cb",
+        "lightMagenta": "#fe85d8",
+        "cyan": "#179299",
+        "lightCyan": "#2d9fa8",
+        "white": "#acb0be",
+        "lightWhite": "#bcc0cc"
+    }
+}

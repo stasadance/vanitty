@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
-import { parse, printParseErrorCode, type ParseError } from "jsonc-parser";
+import { applyEdits, modify, parse, printParseErrorCode, type ParseError } from "jsonc-parser";
 import { applyThemes } from "../themes";
+import { vanittyThemes } from "../themes/vanitty";
 import { DEFAULT_CONFIG, KEYBINDINGS_TEMPLATE, SETTINGS_TEMPLATE, type Config } from "./defaults";
 import { buildKeymap, type Keybinding } from "./keymaps";
 import { keybindingsSchema, SETTINGS_SCHEMA } from "./schema";
@@ -17,6 +18,33 @@ const THEME_COLOR_KEYS = [
     "borderColor",
 ];
 export const KEYBINDINGS = "keybindings.json";
+
+/**
+ * The only settings a theme may change: how Vanitty looks. Theme code comes
+ * from npm, so it must not set the shell, its arguments, environment or
+ * folder, plugins or anything else that runs or loads something.
+ */
+const THEME_KEYS = new Set([
+    ...THEME_COLOR_KEYS,
+    "colors",
+    "css",
+    "termCSS",
+    "fontFamily",
+    "uiFontFamily",
+    "fontSize",
+    "fontWeight",
+    "fontWeightBold",
+    "lineHeight",
+    "letterSpacing",
+    "padding",
+    "cursorShape",
+    "cursorBlink",
+]);
+
+/** The looks-only part of what themes returned. */
+function themeChanges(themed: Record<string, unknown>): Record<string, unknown> {
+    return Object.fromEntries(Object.entries(themed).filter(([key]) => THEME_KEYS.has(key)));
+}
 
 export interface Loaded {
     config: Config;
@@ -104,6 +132,25 @@ export async function loadConfig(): Promise<Loaded> {
     if (!config.profiles.some((p) => p.name === config.defaultProfile))
         config.defaultProfile = config.profiles[0].name;
 
+    // A Vanitty theme is plain data: apply its looks before any Hyper themes.
+    const themeSet = new Set(Object.keys(userConfig));
+    if (typeof config.colorTheme === "string" && config.colorTheme) {
+        const found = await vanittyThemes();
+        errors.push(...found.errors);
+        const theme = found.themes.find((t) => t.id === config.colorTheme);
+        if (!theme) {
+            errors.push(`Theme "${config.colorTheme}" not found. Pick one with Change Theme….`);
+        } else {
+            const looks = themeChanges(theme.settings);
+            for (const key of Object.keys(looks)) themeSet.add(key);
+            config = {
+                ...config,
+                ...looks,
+                colors: { ...config.colors, ...(looks.colors as object | undefined) },
+            } as Config;
+        }
+    }
+
     const themes = Array.isArray(config.themes)
         ? config.themes.filter((t) => typeof t === "string" && t.trim())
         : [];
@@ -112,13 +159,14 @@ export async function loadConfig(): Promise<Loaded> {
         // Hyper passed its defaults along, so those themes never applied; leave
         // unset colors out so they do.
         const input: Record<string, unknown> = { ...config };
-        for (const key of THEME_COLOR_KEYS) if (!(key in userConfig)) delete input[key];
+        for (const key of THEME_COLOR_KEYS) if (!themeSet.has(key)) delete input[key];
         const themed = await applyThemes(themes, input);
         errors.push(...themed.errors);
-        // Themes return a whole config; keep anything they dropped.
+        // Themes return a whole config; keep anything they dropped, and take
+        // only the settings that change how things look.
         config = {
             ...config,
-            ...themed.config,
+            ...themeChanges(themed.config),
             colors: { ...config.colors, ...(themed.config.colors as object) },
         } as Config;
     }
@@ -132,4 +180,23 @@ export async function loadConfig(): Promise<Loaded> {
         keymap: buildKeymap(valid.map((b) => ({ key: b.key ?? "", command: b.command }))),
         errors,
     };
+}
+
+/**
+ * Sets the theme in settings.json, keeping its comments and formatting: a
+ * Vanitty theme id in `colorTheme`, or Hyper themes in `themes`. Setting one
+ * clears the other, and neither means Vanitty's own look.
+ */
+export async function saveTheme(choice: { colorTheme?: string; themes?: string[] }) {
+    let text = (await read(SETTINGS)) ?? SETTINGS_TEMPLATE;
+    const problems: ParseError[] = [];
+    parse(text, problems, { allowTrailingComma: true });
+    if (problems.length) throw new Error(`Fix ${SETTINGS} first: it has a syntax error.`);
+    const formattingOptions = { insertSpaces: true, tabSize: 2 };
+    text = applyEdits(
+        text,
+        modify(text, ["colorTheme"], choice.colorTheme || undefined, { formattingOptions }),
+    );
+    text = applyEdits(text, modify(text, ["themes"], choice.themes ?? [], { formattingOptions }));
+    await write(SETTINGS, text);
 }

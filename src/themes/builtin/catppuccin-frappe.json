@@ -1,0 +1,32 @@
+{
+    "name": "Catppuccin Frappé",
+    "type": "dark",
+    "author": "Catppuccin",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2021 Catppuccin",
+    "source": "https://github.com/catppuccin/palette",
+    "backgroundColor": "#303446",
+    "foregroundColor": "#c6d0f5",
+    "selectionColor": "#414559",
+    "cursorColor": "#f2d5cf",
+    "cursorAccentColor": "#303446",
+    "borderColor": "#414559",
+    "colors": {
+        "black": "#51576d",
+        "lightBlack": "#626880",
+        "red": "#e78284",
+        "lightRed": "#e67172",
+        "green": "#a6d189",
+        "lightGreen": "#8ec772",
+        "yellow": "#e5c890",
+        "lightYellow": "#d9ba73",
+        "blue": "#8caaee",
+        "lightBlue": "#7b9ef0",
+        "magenta": "#f4b8e4",
+        "lightMagenta": "#f2a4db",
+        "cyan": "#81c8be",
+        "lightCyan": "#5abfb5",
+        "white": "#a5adce",
+        "lightWhite": "#b5bfe2"
+    }
+}

@@ -18,7 +18,7 @@ import { KEYBINDINGS_TEMPLATE, SETTINGS_TEMPLATE } from "./config/defaults";
 import { importHyperConfig } from "./config/hyper";
 import { defaultKeybindings } from "./config/keymaps";
 import { hasPluginCommand, runPluginCommand } from "./plugins/host";
-import { activeSessionUid, getState, notify } from "./store";
+import { activeSessionUid, getState, notify, setState } from "./store";
 
 /** Return false to let the key through (e.g. Escape with no search open). */
 type Command = (arg?: string) => void | boolean | Promise<unknown>;
@@ -64,6 +64,7 @@ export const COMMANDS: Record<string, Command> = {
         await invoke("config_write", { name: "keybindings.default.json", contents: text });
         await invoke("config_open", { name: "keybindings.default.json", fallback: text });
     },
+    "window:themes": () => setState({ themePicker: true }),
     "window:hamburgerMenu": () => window.dispatchEvent(new CustomEvent("vanitty:hamburger")),
     "app:quit": async () => {
         // Keep every window for the next launch, not just the last one closed.

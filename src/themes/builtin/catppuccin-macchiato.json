@@ -1,0 +1,32 @@
+{
+    "name": "Catppuccin Macchiato",
+    "type": "dark",
+    "author": "Catppuccin",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2021 Catppuccin",
+    "source": "https://github.com/catppuccin/palette",
+    "backgroundColor": "#24273a",
+    "foregroundColor": "#cad3f5",
+    "selectionColor": "#363a4f",
+    "cursorColor": "#f4dbd6",
+    "cursorAccentColor": "#24273a",
+    "borderColor": "#363a4f",
+    "colors": {
+        "black": "#494d64",
+        "lightBlack": "#5b6078",
+        "red": "#ed8796",
+        "lightRed": "#ec7486",
+        "green": "#a6da95",
+        "lightGreen": "#8ccf7f",
+        "yellow": "#eed49f",
+        "lightYellow": "#e1c682",
+        "blue": "#8aadf4",
+        "lightBlue": "#78a1f6",
+        "magenta": "#f5bde6",
+        "lightMagenta": "#f2a9dd",
+        "cyan": "#8bd5ca",
+        "lightCyan": "#63cbc0",
+        "white": "#a5adcb",
+        "lightWhite": "#b8c0e0"
+    }
+}

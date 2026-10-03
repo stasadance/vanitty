@@ -74,6 +74,8 @@ export interface Config extends TermConfig {
     restoreSession: boolean;
     defaultProfile: string;
     profiles: Profile[];
+    /** A Vanitty theme: built in, or a JSON file in the `themes` folder. */
+    colorTheme: string;
     /** Hyper theme packages from npm, applied in order. */
     themes: string[];
     /** Vanitty plugins from npm. */
@@ -155,6 +157,7 @@ export const DEFAULT_CONFIG: Config = {
     restoreSession: true,
     defaultProfile: "default",
     profiles: [{ name: "default", config: {} }],
+    colorTheme: "",
     themes: [],
     plugins: [],
     localPlugins: [],

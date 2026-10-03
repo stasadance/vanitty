@@ -4,6 +4,7 @@ import { boot } from "./boot";
 import { Header, useTabTitles } from "./components/Header";
 import { Notifications } from "./components/Notifications";
 import { Terms } from "./components/Terms";
+import { ThemePicker } from "./components/ThemePicker";
 import { isMac, uiScale } from "./config/keymaps";
 import { useStore } from "./store";
 
@@ -13,6 +14,7 @@ export default function App() {
     const fullScreen = useStore((s) => s.fullScreen);
     const activeRoot = useStore((s) => s.activeRoot);
     const tabs = useStore((s) => s.tabs);
+    const themePicker = useStore((s) => s.themePicker);
     const titles = useTabTitles();
     const title = activeRoot ? titles[tabs.indexOf(activeRoot)] : undefined;
 
@@ -44,6 +46,7 @@ export default function App() {
                 <Header />
                 <Terms />
                 <Notifications />
+                {themePicker && <ThemePicker />}
             </div>
             <style>{`#hyper {\n${config.css ?? ""}\n}\n#hyper .term_term {\n${config.termCSS ?? ""}\n}`}</style>
         </div>
