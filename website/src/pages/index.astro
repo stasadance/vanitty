@@ -63,7 +63,9 @@ const features = [
             </a>
             <nav>
                 <a href={`${base}/docs/`}>Docs</a>
-                <a href={`${repo}/releases`}>Releases</a>
+                <a href={`${repo}/releases`} class="releases">
+                    Releases
+                </a>
                 <a href={repo} class="gh">
                     GitHub
                 </a>
@@ -115,8 +117,8 @@ const features = [
                 <div class="shot">
                     <Image
                         src={hero}
-                        alt="Vanitty running neofetch and git log"
-                        widths={[800, 1200]}
+                        alt="Vanitty with tabs and a split running neofetch, git log and code"
+                        widths={[800, 1200, 2400]}
                         sizes="(max-width: 1240px) 100vw, 1200px"
                         loading="eager"
                         decoding="sync"
@@ -495,11 +497,30 @@ const features = [
         padding: 32px 16px;
     }
     @media (max-width: 600px) {
+        .nav {
+            gap: 12px;
+        }
         .nav nav {
-            gap: 16px;
+            gap: 14px;
+            font-size: 14px;
+        }
+        .brand img {
+            height: 22px;
+            width: auto;
+        }
+        .cmd code {
+            font-size: 13px;
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
         .hero {
             padding-top: 40px;
+        }
+    }
+    /* The Download button links to the latest release, so the nav can drop it. */
+    @media (max-width: 420px) {
+        .nav .releases {
+            display: none;
         }
     }
 </style>
