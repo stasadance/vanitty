@@ -21,7 +21,7 @@ The frontend (React 19, Zustand, xterm.js) is in `src/`. The Rust side (PTY, con
 
 ## Before opening a pull request
 
-Run these and make sure they pass (`just check` runs them all, `just fmt` fixes formatting):
+Run these and make sure they pass (`just check` runs them all, `just format` fixes formatting):
 
 ```sh
 pnpm typecheck

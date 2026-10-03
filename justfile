@@ -32,7 +32,7 @@ check:
     cargo test {{manifest}}
 
 # Format all code
-fmt:
+format:
     pnpm format
     cargo fmt {{manifest}}
 
