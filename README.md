@@ -9,7 +9,7 @@ A fast, native terminal. A Rust + Tauri rewrite of [Hyper](https://github.com/ve
 
 **[Website and docs](https://vanitty.dev)**
 
-<p align="center"><img alt="Vanitty with neofetch and git log" src="docs/assets/screenshots/hero.png"></p>
+<p align="center"><img alt="Vanitty with tabs and a split running neofetch, git log and code" src="docs/assets/screenshots/hero.png"></p>
 
 ## Features
 
