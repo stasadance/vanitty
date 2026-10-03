@@ -111,21 +111,28 @@ DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
 APP_DIR="$DATA/vanitty"
 BIN="$HOME/.local/bin/vanitty"
 DESKTOP="$DATA/applications/vanitty.desktop"
-ICON="$DATA/icons/hicolor/128x128/apps/vanitty.png"
+ICON="$APP_DIR/vanitty.png"
+# Where earlier versions of this script put the icon.
+OLD_ICON="$DATA/icons/hicolor/128x128/apps/vanitty.png"
 
 install_linux() {
   [ "$(uname -m)" = x86_64 ] || die "only x86_64 Linux builds are published. See https://vanitty.dev/docs/develop/ to build from source."
   appimage="$APP_DIR/Vanitty.AppImage"
   download .AppImage "$tmp/Vanitty.AppImage"
   chmod +x "$tmp/Vanitty.AppImage"
-  mkdir -p "$APP_DIR" "$(dirname "$BIN")" "$(dirname "$DESKTOP")" "$(dirname "$ICON")"
+  mkdir -p "$APP_DIR" "$(dirname "$BIN")" "$(dirname "$DESKTOP")"
   mv -f "$tmp/Vanitty.AppImage" "$appimage"
   ln -sf "$appimage" "$BIN"
 
-  icon="usr/share/icons/hicolor/128x128/apps/vanitty.png"
-  if (cd "$tmp" && "$appimage" --appimage-extract "$icon" > /dev/null 2>&1); then
+  # The menu entry names the icon by its full path, so it shows up even when
+  # the desktop's icon theme cache doesn't know about it.
+  icon="usr/share/icons/hicolor/256x256@2/apps/vanitty.png"
+  if (cd "$tmp" && "$appimage" --appimage-extract "$icon" > /dev/null 2>&1) && [ -s "$tmp/squashfs-root/$icon" ]; then
     cp -f "$tmp/squashfs-root/$icon" "$ICON"
+  else
+    say "Couldn't extract the icon from the AppImage; the menu entry will use a generic one."
   fi
+  rm -f "$OLD_ICON"
 
   cat > "$DESKTOP" << EOF
 [Desktop Entry]
@@ -134,7 +141,7 @@ Name=Vanitty
 GenericName=Terminal
 Comment=A fast, native terminal
 Exec=$appimage
-Icon=vanitty
+Icon=$ICON
 Terminal=false
 Categories=System;TerminalEmulator;
 Keywords=terminal;shell;prompt;command;commandline;
@@ -154,7 +161,7 @@ EOF
 
 uninstall_linux() {
   rm -rf "$APP_DIR"
-  rm -f "$DESKTOP" "$ICON"
+  rm -f "$DESKTOP" "$OLD_ICON"
   [ -L "$BIN" ] && rm -f "$BIN"
   say "Removed Vanitty. Your settings in ~/.config/vanitty are kept."
 }
