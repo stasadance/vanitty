@@ -70,6 +70,7 @@ export interface Config extends TermConfig {
   showWindowControls: boolean | "left" | "";
   borderRadius: number;
   preserveCWD: boolean;
+  disableAutoUpdates: boolean;
   restoreSession: boolean;
   defaultProfile: string;
   profiles: Profile[];
@@ -149,6 +150,7 @@ export const DEFAULT_CONFIG: Config = {
   disableLigatures: false,
   modifierKeys: { altIsMeta: false, cmdIsMeta: false },
   preserveCWD: true,
+  disableAutoUpdates: false,
   restoreSession: true,
   defaultProfile: "default",
   profiles: [{ name: "default", config: {} }],

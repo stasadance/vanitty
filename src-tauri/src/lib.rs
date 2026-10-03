@@ -2,6 +2,7 @@ mod config;
 mod packages;
 mod pty;
 mod session;
+mod updater;
 mod window;
 
 use tauri::webview::PageLoadEvent;
@@ -12,9 +13,11 @@ pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(window::state_plugin())
         .manage(pty::PtyManager::default())
         .manage(session::SessionStore::load())
+        .manage(updater::Updater::default())
         .invoke_handler(tauri::generate_handler![
             pty::pty_spawn,
             pty::pty_write,
@@ -29,6 +32,8 @@ pub fn run() {
             config::hyper_config_find,
             packages::packages_install,
             packages::packages_sources,
+            updater::update_check,
+            updater::update_install,
             window::window_new,
             session::session_take,
             session::session_save,
@@ -61,6 +66,7 @@ pub fn run() {
     app.run(|handle, event| {
         if let RunEvent::Exit = event {
             handle.state::<pty::PtyManager>().kill_all();
+            updater::install_on_exit(handle);
         }
     });
 }

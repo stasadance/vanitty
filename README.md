@@ -51,20 +51,56 @@ They're downloaded into `themes/` and their `decorateConfig` runs in a Web Worke
 
 ## Install
 
-Installers for Windows, Linux and macOS (one universal `.dmg` for Apple Silicon and Intel) are attached to each [release](https://github.com/stasadance/vanitty/releases).
+**macOS and Linux**
 
-The macOS build isn't notarized yet, so macOS blocks it on first launch. After moving Vanitty to Applications, either open it once, then click **Open Anyway** in System Settings > Privacy & Security, or run:
+```sh
+curl -fsSL https://vanitty.dev/install.sh | sh
+```
+
+**Windows** (PowerShell)
+
+```powershell
+irm https://vanitty.dev/install.ps1 | iex
+```
+
+The script downloads the latest release, checks its SHA-256 and installs it: `Vanitty.app` in `/Applications` on macOS, the AppImage in `~/.local/share/vanitty` with a menu entry and a `vanitty` command on Linux (no root needed), and the per-user installer on Windows. Run the macOS/Linux script with `sh -s -- --uninstall` to remove Vanitty; on Windows use Settings > Apps.
+
+Vanitty then updates itself in the background and shows a "Restart to update" notice when a new version is ready. Set `"disableAutoUpdates": true` in your settings to turn that off.
+
+### Manual download
+
+Every [release](https://github.com/stasadance/vanitty/releases/latest) has:
+
+| Platform | Files |
+| --- | --- |
+| Windows | `.exe` (per-user setup), `.msi` |
+| macOS (Apple Silicon and Intel) | `.dmg` |
+| Debian, Ubuntu | `.deb` |
+| Fedora, openSUSE | `.rpm` |
+| Any Linux | `.AppImage` |
+
+The macOS build isn't notarized yet, so macOS blocks a downloaded `.dmg` on first launch (the install script avoids this). After moving Vanitty to Applications, either open it once, then click **Open Anyway** in System Settings > Privacy & Security, or run:
 
 ```sh
 xattr -dr com.apple.quarantine /Applications/Vanitty.app
 ```
 
-On Arch Linux, build the package from the repo:
+### Arch Linux
+
+Build the package from the repo:
 
 ```sh
 cd packaging/arch
 makepkg -si
 ```
+
+### From source
+
+```sh
+cargo install vanitty
+```
+
+Needs Rust and the [Tauri prerequisites](https://tauri.app/start/prerequisites/). Builds from source don't update themselves.
 
 ## Develop
 

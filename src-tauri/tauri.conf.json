@@ -27,6 +27,15 @@
     ],
     "macOS": {
       "signingIdentity": "-"
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZFOTkxQkZFMUEwQzc2NzAKUldSd2Rnd2EvaHVaYnZ0c3ZRVmxxZ2dMZGNnRDJSeUdJNDhpNnZNbGdHRnBTZ04yV1ROamxUbmYK",
+      "endpoints": [
+        "https://github.com/stasadance/vanitty/releases/latest/download/latest.json"
+      ]
     }
   }
 }

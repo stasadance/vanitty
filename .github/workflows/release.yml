@@ -76,6 +76,9 @@ jobs:
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Signs the update bundles that the in-app updater downloads.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ needs.version.outputs.tag }}
           releaseName: Vanitty ${{ needs.version.outputs.tag }}
@@ -85,4 +88,6 @@ jobs:
           generateReleaseNotes: true
           releaseDraft: false
           prerelease: false
+          # latest.json points Windows updates at the setup.exe that install.ps1 uses.
+          updaterJsonPreferNsis: true
           args: ${{ matrix.args }}
