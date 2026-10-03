@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { parse, printParseErrorCode, type ParseError } from "jsonc-parser";
+import { applyEdits, modify, parse, printParseErrorCode, type ParseError } from "jsonc-parser";
 import { applyThemes } from "../themes";
 import { DEFAULT_CONFIG, KEYBINDINGS_TEMPLATE, SETTINGS_TEMPLATE, type Config } from "./defaults";
 import { buildKeymap, type Keybinding } from "./keymaps";
@@ -132,4 +132,16 @@ export async function loadConfig(): Promise<Loaded> {
         keymap: buildKeymap(valid.map((b) => ({ key: b.key ?? "", command: b.command }))),
         errors,
     };
+}
+
+/** Sets `themes` in settings.json, keeping its comments and formatting. */
+export async function saveThemes(themes: string[]) {
+    const text = (await read(SETTINGS)) ?? SETTINGS_TEMPLATE;
+    const problems: ParseError[] = [];
+    parse(text, problems, { allowTrailingComma: true });
+    if (problems.length) throw new Error(`Fix ${SETTINGS} first: it has a syntax error.`);
+    const edits = modify(text, ["themes"], themes, {
+        formattingOptions: { insertSpaces: true, tabSize: 2 },
+    });
+    await write(SETTINGS, applyEdits(text, edits));
 }

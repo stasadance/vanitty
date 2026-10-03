@@ -121,6 +121,7 @@ async function submenus(): Promise<Submenu[]> {
             await item("Open Settings", "window:preferences"),
             await item("Open Keybindings", "window:keybindings"),
             await item("Show Default Keybindings", "window:defaultKeybindings"),
+            await item("Change Theme…", "window:themes"),
             await sep(),
             await item("Import Hyper Config", "app:importHyper"),
         ],
@@ -194,6 +195,7 @@ export async function popupTitleMenu(x: number, y: number) {
         items: [
             await item("Open Settings", "window:preferences", false),
             await item("Open Keybindings", "window:keybindings", false),
+            await item("Change Theme…", "window:themes", false),
             await sep(),
             await item("Inspect Element", "window:devtools", false),
         ],

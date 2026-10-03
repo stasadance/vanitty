@@ -54,6 +54,7 @@ export interface State {
     fullScreen: boolean;
     /** Title bar items added by plugins. */
     headerItems: Record<string, HeaderItem>;
+    themePicker: boolean;
 }
 
 export const useStore = create<State>()(() => ({
@@ -69,6 +70,7 @@ export const useStore = create<State>()(() => ({
     maximized: false,
     fullScreen: false,
     headerItems: {},
+    themePicker: false,
 }));
 
 export const getState = useStore.getState;

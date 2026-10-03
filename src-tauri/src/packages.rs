@@ -239,6 +239,76 @@ pub async fn packages_install(
 /// Every `.js`/`.json` file under the kind's node_modules, keyed by its path
 /// relative to node_modules with `/` separators, for the worker's `require`.
 /// Local folders under `<kind>/local/<name>` appear as `@local/<name>`.
+/// A theme listed on npm, for the theme picker.
+#[derive(Serialize)]
+pub struct ThemeListing {
+    name: String,
+    description: String,
+    /// Downloads in the last month.
+    downloads: u64,
+}
+
+#[derive(Deserialize)]
+struct SearchPage {
+    objects: Vec<SearchObject>,
+    total: usize,
+}
+
+#[derive(Deserialize)]
+struct SearchObject {
+    package: SearchPackage,
+    #[serde(default)]
+    downloads: Option<Downloads>,
+}
+
+#[derive(Deserialize)]
+struct SearchPackage {
+    name: String,
+    #[serde(default)]
+    description: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct Downloads {
+    #[serde(default)]
+    monthly: u64,
+}
+
+/// Packages tagged `hyper-theme` on npm, most downloaded first.
+#[tauri::command]
+pub async fn themes_list() -> Result<Vec<ThemeListing>, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        const PAGE: usize = 250;
+        let agent = agent();
+        let mut themes = Vec::new();
+        // The search API returns at most 250 per page; stop at a sane limit.
+        for from in (0..1000).step_by(PAGE) {
+            let url =
+                format!("{REGISTRY}/-/v1/search?text=keywords:hyper-theme&size={PAGE}&from={from}");
+            let page: SearchPage = agent
+                .get(&url)
+                .call()
+                .map_err(|e| e.to_string())?
+                .body_mut()
+                .read_json()
+                .map_err(|e| e.to_string())?;
+            let done = page.objects.len() < PAGE || from + PAGE >= page.total;
+            themes.extend(page.objects.into_iter().map(|o| ThemeListing {
+                name: o.package.name,
+                description: o.package.description.unwrap_or_default(),
+                downloads: o.downloads.map_or(0, |d| d.monthly),
+            }));
+            if done {
+                break;
+            }
+        }
+        themes.sort_by_key(|t| std::cmp::Reverse(t.downloads));
+        Ok(themes)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[tauri::command]
 pub fn packages_sources(kind: String) -> Result<BTreeMap<String, String>, String> {
     let base = kind_dir(&kind)?;

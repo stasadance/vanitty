@@ -33,6 +33,7 @@ pub fn run() {
             host::open_url,
             packages::packages_install,
             packages::packages_sources,
+            packages::themes_list,
             updater::update_check,
             updater::update_install,
             window::window_new,
