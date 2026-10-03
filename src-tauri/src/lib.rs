@@ -31,6 +31,8 @@ pub fn run() {
             config::config_open,
             config::hyper_config_find,
             host::open_url,
+            host::open_path,
+            host::path_links,
             packages::packages_install,
             packages::packages_sources,
             updater::update_check,

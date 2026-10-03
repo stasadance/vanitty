@@ -12,7 +12,9 @@ import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import Color from "color";
 import type { TermConfig } from "../config/defaults";
 import { platform, uiScale } from "../config/keymaps";
+import { notify } from "../store";
 import { DEFAULT_BELL } from "./bell";
+import { fileLinkProvider } from "./fileLinks";
 import {
     killPty,
     ptyCwd,
@@ -164,6 +166,15 @@ export class TermSession {
                 const key = this.config.webLinksActivationKey;
                 if (!key || event[`${key}Key` as "ctrlKey"]) void invoke("open_url", { url: uri });
             }),
+        );
+        this.disposables.push(
+            term.registerLinkProvider(
+                fileLinkProvider(
+                    term,
+                    () => this.cwd(),
+                    (e) => notify(e, true),
+                ),
+            ),
         );
         term.open(this.element);
         term.loadAddon(new Unicode11Addon());

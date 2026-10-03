@@ -180,6 +180,76 @@ pub fn open_url(url: String) -> Result<(), String> {
     open(&url)
 }
 
+/// Resolves paths printed in a terminal against the shell's directory (else
+/// the home directory). Each comes back absolute if it exists, else `None`.
+#[tauri::command]
+pub fn path_links(cwd: Option<String>, paths: Vec<String>) -> Vec<Option<String>> {
+    let home = std::env::home_dir().unwrap_or_default();
+    let base = cwd.map_or_else(|| home.clone(), std::path::PathBuf::from);
+    paths
+        .iter()
+        .map(|p| {
+            let path = resolve(&base, &home, p);
+            path.exists().then(|| path.to_string_lossy().into_owned())
+        })
+        .collect()
+}
+
+fn resolve(base: &Path, home: &Path, path: &str) -> std::path::PathBuf {
+    if path == "~" {
+        return home.to_path_buf();
+    }
+    match path.strip_prefix("~/").or_else(|| path.strip_prefix("~\\")) {
+        Some(rest) => home.join(rest),
+        None => base.join(path),
+    }
+}
+
+/// Opens a file or folder clicked in a terminal with the system default app.
+/// Programs are refused, so a click can't run something.
+#[tauri::command]
+pub fn open_path(path: String) -> Result<(), String> {
+    let path = Path::new(&path);
+    let meta =
+        std::fs::metadata(path).map_err(|e| format!("Can't open {}: {e}", path.display()))?;
+    if is_program(path, &meta) {
+        return Err(format!(
+            "Not opening {}: it's a program, and clicking a path never runs one.",
+            path.display()
+        ));
+    }
+    open(&path.to_string_lossy())
+}
+
+/// Extensions the system default app would run rather than show.
+const PROGRAM_EXTENSIONS: &[&str] = &[
+    // Windows
+    "exe", "com", "bat", "cmd", "ps1", "msi", "msix", "appx", "lnk", "url", "scr", "pif", "vbs",
+    "vbe", "js", "jse", "wsf", "wsh", "hta", "cpl", "msc", "reg", "jar", // macOS
+    "app", "command", "tool", "terminal", "workflow", "pkg", "mpkg", // Linux
+    "desktop", "appimage", "run",
+];
+
+fn is_program(path: &Path, meta: &std::fs::Metadata) -> bool {
+    let ext = path
+        .extension()
+        .map(|e| e.to_string_lossy().to_ascii_lowercase())
+        .unwrap_or_default();
+    if PROGRAM_EXTENSIONS.contains(&ext.as_str()) {
+        return true;
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if meta.is_file() && meta.permissions().mode() & 0o111 != 0 {
+            return true;
+        }
+    }
+    #[cfg(not(unix))]
+    let _ = meta;
+    false
+}
+
 /// Variables the AppImage runtime and its launch scripts set for Vanitty
 /// itself. Shells must not inherit them.
 const APPIMAGE_VARS: &[&str] = &["APPDIR", "APPIMAGE", "ARGV0", "OWD", "GTK_THEME"];
@@ -216,6 +286,49 @@ fn appimage_env(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn resolves_terminal_paths() {
+        let base = Path::new("/work/project");
+        let home = Path::new("/home/me");
+        assert_eq!(
+            resolve(base, home, "src/main.rs"),
+            Path::new("/work/project/src/main.rs")
+        );
+        assert_eq!(
+            resolve(base, home, "../other"),
+            Path::new("/work/project/../other")
+        );
+        assert_eq!(resolve(base, home, "/etc/hosts"), Path::new("/etc/hosts"));
+        assert_eq!(
+            resolve(base, home, "~/notes.md"),
+            Path::new("/home/me/notes.md")
+        );
+        assert_eq!(resolve(base, home, "~"), Path::new("/home/me"));
+    }
+
+    #[test]
+    fn refuses_programs() {
+        let dir = std::env::temp_dir().join(format!("vanitty-open-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let text = dir.join("notes.txt");
+        let app = dir.join("Setup.EXE");
+        std::fs::write(&text, "hi").unwrap();
+        std::fs::write(&app, "hi").unwrap();
+        let meta = |p: &Path| std::fs::metadata(p).unwrap();
+        assert!(!is_program(&text, &meta(&text)));
+        assert!(is_program(&app, &meta(&app)));
+        assert!(!is_program(&dir, &meta(&dir)));
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let script = dir.join("build");
+            std::fs::write(&script, "#!/bin/sh").unwrap();
+            std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).unwrap();
+            assert!(is_program(&script, &meta(&script)));
+        }
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
 
     fn vars(list: &[(&str, &str)]) -> impl Iterator<Item = (String, String)> {
         list.iter()
