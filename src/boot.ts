@@ -9,6 +9,7 @@ import { eventKey, platform } from "./config/keymaps";
 import { ensureConfigFiles, loadConfig } from "./config/load";
 import { installAppMenu, popupHamburger } from "./menu";
 import { activeSessionUid, getState, notify, setState, useStore } from "./store";
+import { startUpdateChecks } from "./updates";
 
 let configErrors: string[] = [];
 
@@ -67,6 +68,7 @@ export async function boot() {
   const notes = await ensureConfigFiles(COMMAND_IDS).catch((e) => [`Couldn't set up config files: ${e}`]);
   await reloadConfig();
   for (const n of notes) notify(n);
+  startUpdateChecks();
 
   let timer: ReturnType<typeof setTimeout> | undefined;
   await listen<string>("config-changed", () => {

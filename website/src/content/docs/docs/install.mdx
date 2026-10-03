@@ -1,0 +1,109 @@
+---
+title: Install
+description: Install Vanitty on macOS, Linux or Windows.
+---
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+<Tabs syncKey="os">
+  <TabItem label="macOS">
+    ```sh
+    curl -fsSL https://vanitty.dev/install.sh | sh
+    ```
+
+    Installs `Vanitty.app` in `/Applications` (or `~/Applications` if you can't write there). One universal build runs on Apple Silicon and Intel.
+  </TabItem>
+  <TabItem label="Linux">
+    ```sh
+    curl -fsSL https://vanitty.dev/install.sh | sh
+    ```
+
+    Installs the AppImage in `~/.local/share/vanitty`, adds a menu entry and links a `vanitty` command in `~/.local/bin`. No root needed. AppImages need FUSE, which most desktops have; install your distro's `fuse3` package if Vanitty doesn't start. Builds are x86_64 only.
+  </TabItem>
+  <TabItem label="Windows">
+    In PowerShell:
+
+    ```powershell
+    irm https://vanitty.dev/install.ps1 | iex
+    ```
+
+    Runs the per-user installer silently, so there's no admin prompt. Vanitty then shows up in the Start menu.
+  </TabItem>
+</Tabs>
+
+The script downloads the latest release and checks its SHA-256 before installing. To install a specific version, set `VANITTY_VERSION` first:
+
+```sh
+curl -fsSL https://vanitty.dev/install.sh | VANITTY_VERSION=26.10.0 sh
+```
+
+## Updates
+
+Vanitty checks for a new release in the background a few seconds after it starts and every six hours, and downloads it quietly. When it's ready, a notice offers **Restart to update**. On macOS and with the AppImage the update is also applied when you quit, so the next launch is the new version.
+
+To turn this off, add this to your [settings](/docs/settings/):
+
+```jsonc
+"disableAutoUpdates": true
+```
+
+Builds from source (`cargo install`, the Arch package) never update themselves.
+
+## Uninstall
+
+<Tabs syncKey="os">
+  <TabItem label="macOS">
+    ```sh
+    curl -fsSL https://vanitty.dev/install.sh | sh -s -- --uninstall
+    ```
+  </TabItem>
+  <TabItem label="Linux">
+    ```sh
+    curl -fsSL https://vanitty.dev/install.sh | sh -s -- --uninstall
+    ```
+  </TabItem>
+  <TabItem label="Windows">
+    Settings > Apps > Installed apps > Vanitty > Uninstall.
+  </TabItem>
+</Tabs>
+
+Your settings in `~/.config/vanitty` (`%APPDATA%\Vanitty` on Windows) are kept.
+
+## Manual download
+
+Every [GitHub release](https://github.com/stasadance/vanitty/releases/latest) has:
+
+| Platform | Files |
+| --- | --- |
+| Windows | `.exe` (per-user setup), `.msi` |
+| macOS (Apple Silicon and Intel) | `.dmg` |
+| Debian, Ubuntu | `.deb` |
+| Fedora, openSUSE | `.rpm` |
+| Any Linux | `.AppImage` |
+
+The macOS build isn't notarized yet, so macOS blocks a downloaded `.dmg` on first launch (the install script avoids this). After moving Vanitty to Applications, either open it once, then click **Open Anyway** in System Settings > Privacy & Security, or run:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/Vanitty.app
+```
+
+## Arch Linux
+
+Build the package from the repo:
+
+```sh
+git clone https://github.com/stasadance/vanitty
+cd vanitty/packaging/arch
+makepkg -si
+```
+
+## From source
+
+```sh
+cargo install vanitty
+```
+
+Needs Rust and the [Tauri prerequisites](https://tauri.app/start/prerequisites/). See [Develop](/docs/develop/) to work on Vanitty itself.
+
+## Coming from Hyper
+
+On first run, Vanitty imports your Hyper config (`hyper.json` or `.hyper.js`) if it finds one. **Settings > Import Hyper Config** does it again later.

@@ -18,9 +18,10 @@ dev:
 build-ui:
     pnpm build
 
-# Build release bundles for this platform
+# Build release bundles for this platform (without the signed update bundles,
+# which need the release signing key)
 build:
-    pnpm tauri build
+    pnpm tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'
 
 # Typecheck, format check, lint and test, like CI
 check:

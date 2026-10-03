@@ -585,6 +585,17 @@ body,
   border-left-color: #fe354e;
 }
 
+.notification_action {
+  margin-left: auto;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.notification_action + .notification_dismiss {
+  margin-left: 0;
+}
+
 .notification_dismiss {
   margin-left: auto;
   cursor: pointer;

@@ -27,6 +27,15 @@
     ],
     "macOS": {
       "signingIdentity": "-"
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "REPLACE_WITH_RELEASE_PUBLIC_KEY",
+      "endpoints": [
+        "https://github.com/stasadance/vanitty/releases/latest/download/latest.json"
+      ]
     }
   }
 }

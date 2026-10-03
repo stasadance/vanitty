@@ -16,10 +16,9 @@ interface HyperConfig {
   keymaps?: Record<string, string | string[]>;
 }
 
-// Hyper options that do nothing here (updates, Electron and plugin plumbing).
+// Hyper options that do nothing here (update channels, Electron and plugin plumbing).
 const DROPPED = [
   "updateChannel",
-  "disableAutoUpdates",
   "autoUpdatePlugins",
   "defaultSSHApp",
   "useConpty",

@@ -70,6 +70,7 @@ export interface Config extends TermConfig {
   showWindowControls: boolean | "left" | "";
   borderRadius: number;
   preserveCWD: boolean;
+  disableAutoUpdates: boolean;
   defaultProfile: string;
   profiles: Profile[];
   /** Hyper theme packages from npm, applied in order. */
@@ -148,6 +149,7 @@ export const DEFAULT_CONFIG: Config = {
   disableLigatures: false,
   modifierKeys: { altIsMeta: false, cmdIsMeta: false },
   preserveCWD: true,
+  disableAutoUpdates: false,
   defaultProfile: "default",
   profiles: [{ name: "default", config: {} }],
   themes: [],

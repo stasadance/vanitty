@@ -29,6 +29,7 @@ export interface Notification {
   id: string;
   text: string;
   error?: boolean;
+  action?: { label: string; run: () => void };
 }
 
 export interface HeaderItem {
@@ -80,10 +81,11 @@ export function activeSessionUid(s: State = getState()): string | undefined {
   return s.activeRoot ? s.activeSessions[s.activeRoot] : undefined;
 }
 
-export function notify(text: string, error = false) {
+export function notify(text: string, error = false, action?: Notification["action"]) {
   const id = uid("n");
-  setState((s) => ({ notifications: [...s.notifications, { id, text, error }] }));
-  if (!error) setTimeout(() => dismiss(id), 6000);
+  setState((s) => ({ notifications: [...s.notifications, { id, text, error, action }] }));
+  // Notifications with an action stay until dismissed.
+  if (!error && !action) setTimeout(() => dismiss(id), 6000);
 }
 
 export function dismiss(id: string) {
