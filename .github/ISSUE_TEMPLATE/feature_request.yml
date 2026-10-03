@@ -1,0 +1,10 @@
+name: Feature request
+description: Suggest something new or a change
+labels: [enhancement]
+body:
+  - type: textarea
+    attributes:
+      label: What you want
+      description: What you'd like Vanitty to do, and the problem it solves for you.
+    validations:
+      required: true
