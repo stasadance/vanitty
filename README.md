@@ -105,16 +105,18 @@ They're downloaded into `themes/` and their `decorateConfig` runs in a Web Worke
 
 ## Develop
 
-Requires Rust, Node 22+, pnpm, and the [Tauri prerequisites](https://tauri.app/start/prerequisites/).
+Requires Rust, Node 22+, pnpm, [just](https://github.com/casey/just), and the [Tauri prerequisites](https://tauri.app/start/prerequisites/).
 
 ```sh
-pnpm install
-pnpm tauri dev
+just install
+just dev
 ```
+
+Run `just` to list the other recipes.
 
 ## Releases
 
-Versions are `YY.MM.PATCH`; PATCH starts at 0 each month. `just release` (or `pnpm release`) bumps the version on a `release/v…` branch and opens a PR. Merging it runs the Release workflow, which tags the version and builds Windows (`.msi`, `.exe`) Linux (`.deb`, `.rpm`, `.AppImage`) and macOS (`.dmg`) installers, attached to a GitHub release with notes generated from the merged PRs. The workflow can also be run by hand from the Actions tab; it skips versions that are already released.
+Versions are `YY.MM.PATCH`; PATCH starts at 0 each month. `just release` bumps the version on a `release/v…` branch and opens a PR. Merging it runs the Release workflow, which tags the version and builds Windows (`.msi`, `.exe`) Linux (`.deb`, `.rpm`, `.AppImage`) and macOS (`.dmg`) installers, attached to a GitHub release with notes generated from the merged PRs. The workflow can also be run by hand from the Actions tab; it skips versions that are already released.
 
 ## Stack
 
