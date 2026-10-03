@@ -1,0 +1,20 @@
+/* Vanitty brand: pink to violet on near-black. */
+:root {
+  --vt-pink: #f81ce5;
+  --vt-violet: #7b5cff;
+  --sl-color-accent-low: #2a1338;
+  --sl-color-accent: #b23cf2;
+  --sl-color-accent-high: #f3c8ff;
+  --sl-font: "Inter", system-ui, sans-serif;
+  --sl-font-mono: "FiraCode Nerd Font Mono", "JetBrains Mono", ui-monospace, monospace;
+}
+:root:not([data-theme="light"]) {
+  --sl-color-black: #09080b;
+  --sl-color-gray-6: #16141b;
+  --sl-color-gray-5: #24212b;
+}
+:root[data-theme="light"] {
+  --sl-color-accent-low: #f6dcff;
+  --sl-color-accent: #8a1fd1;
+  --sl-color-accent-high: #3d0a5e;
+}

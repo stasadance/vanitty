@@ -1,0 +1,25 @@
+---
+title: Introduction
+description: What Vanitty is and what it can do.
+---
+
+Vanitty is a fast, native terminal. It's a Rust and Tauri rewrite of [Hyper](https://github.com/vercel/hyper) without Electron. It keeps Hyper's look, config and themes.
+
+## Features
+
+- Tabs, split panes (drag dividers, double-click to even them out), pane and tab navigation
+- Search in scrollback (case, whole word, regex)
+- Clickable links, inline images, Unicode 11 widths, WebGL rendering
+- Ships with FiraCode Nerd Font Mono, with ligatures (`disableLigatures` turns them off)
+- Profiles: per-profile shell, args, env and colors, picked from the new-tab menu
+- New tabs and splits open in the current directory (`preserveCWD`, macOS and Linux)
+- Zoom, full screen, always on top, copy on select, quick edit, bell sound
+- Drag files onto a terminal to paste their paths
+- Rounded, frameless window on Linux and Windows; native rounded window on macOS
+- [Hyper themes](/vanitty/docs/themes/) from npm, run in a sandbox
+- [Sandboxed JS plugins](/vanitty/docs/plugins/)
+
+## Not supported (yet)
+
+- Hyper plugins other than themes (use Vanitty plugins instead)
+- Auto-update, the `hyper` CLI, `ssh://` links, the Windows Explorer context menu entry
