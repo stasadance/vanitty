@@ -15,7 +15,10 @@ export default defineConfig({
         replacesTitle: true,
       },
       favicon: "/favicon.svg",
-      social: [{ icon: "github", label: "GitHub", href: "https://github.com/stasadance/vanitty" }],
+      social: [
+        { icon: "github", label: "GitHub", href: "https://github.com/stasadance/vanitty" },
+        { icon: "heart", label: "Sponsor", href: "https://github.com/sponsors/stasadance" },
+      ],
       customCss: ["./src/styles/theme.css"],
       sidebar: [
         { label: "Getting started", items: ["docs", "docs/install"] },
