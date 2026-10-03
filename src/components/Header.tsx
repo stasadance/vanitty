@@ -2,7 +2,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { newTab } from "../actions";
 import { isMac } from "../config/keymaps";
 import { runCommand } from "../commands";
-import { popupHamburger } from "../menu";
+import { popupHamburger, popupTitleMenu } from "../menu";
 import { useStore } from "../store";
 import { Close, Hamburger, Maximize, Minimize, Restore } from "./icons";
 import { Tabs } from "./Tabs";
@@ -35,7 +35,13 @@ export function Header() {
   const win = getCurrentWindow();
 
   return (
-    <header className={`header_header ${isMac ? "header_headerRounded" : ""}`}>
+    <header
+      className={`header_header ${isMac ? "header_headerRounded" : ""}`}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        void popupTitleMenu();
+      }}
+    >
       {!isMac && (
         <div
           className={`header_windowHeader ${tabs.length > 1 ? "header_windowHeaderWithBorder" : ""}`}
