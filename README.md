@@ -71,13 +71,13 @@ Vanitty then updates itself in the background and shows a "Restart to update" no
 
 Every [release](https://github.com/stasadance/vanitty/releases/latest) has:
 
-| Platform | Files |
-| --- | --- |
-| Windows | `.exe` (per-user setup), `.msi` |
-| macOS (Apple Silicon and Intel) | `.dmg` |
-| Debian, Ubuntu | `.deb` |
-| Fedora, openSUSE | `.rpm` |
-| Any Linux | `.AppImage` |
+| Platform                        | Files                           |
+| ------------------------------- | ------------------------------- |
+| Windows                         | `.exe` (per-user setup), `.msi` |
+| macOS (Apple Silicon and Intel) | `.dmg`                          |
+| Debian, Ubuntu                  | `.deb`                          |
+| Fedora, openSUSE                | `.rpm`                          |
+| Any Linux                       | `.AppImage`                     |
 
 The macOS build isn't notarized yet, so macOS blocks a downloaded `.dmg` on first launch (the install script avoids this). After moving Vanitty to Applications, either open it once, then click **Open Anyway** in System Settings > Privacy & Security, or run:
 

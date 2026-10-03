@@ -1,5 +1,5 @@
 # Config for the release notes GitHub generates from merged PRs.
 changelog:
-  exclude:
-    authors:
-      - dependabot
+    exclude:
+        authors:
+            - dependabot

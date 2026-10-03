@@ -6,4 +6,4 @@
 
 <!-- Which OS you ran it on with `pnpm tauri dev`. -->
 
-- [ ] `pnpm typecheck`, `cargo fmt --check`, `cargo clippy` and `cargo test` pass
+- [ ] `pnpm typecheck`, `pnpm format:check`, `cargo fmt --check`, `cargo clippy` and `cargo test` pass

@@ -10,79 +10,139 @@ const winCmd = "irm https://vanitty.dev/install.ps1 | iex";
 const sponsor = "https://github.com/sponsors/stasadance";
 
 const features = [
-  { title: "Native, not Electron", body: "Rust and Tauri under the hood, with the system webview instead of a bundled Chromium." },
-  { title: "Tabs and splits", body: "Split panes in any direction, drag the dividers, and jump between panes and tabs from the keyboard." },
-  { title: "Hyper themes", body: "Install any Hyper theme from npm. It runs in a sandboxed worker with no network or file access." },
-  { title: "Sandboxed plugins", body: "Write plugins in JavaScript or TypeScript against a typed API. Each one runs in its own Web Worker." },
-  { title: "VS Code style config", body: "settings.json and keybindings.json with comments, a JSON schema, autocomplete and live reload." },
-  { title: "Fast rendering", body: "xterm.js on WebGL, ligatures, inline images, clickable links and search across the scrollback." },
+    {
+        title: "Native, not Electron",
+        body: "Rust and Tauri under the hood, with the system webview instead of a bundled Chromium.",
+    },
+    {
+        title: "Tabs and splits",
+        body: "Split panes in any direction, drag the dividers, and jump between panes and tabs from the keyboard.",
+    },
+    {
+        title: "Hyper themes",
+        body: "Install any Hyper theme from npm. It runs in a sandboxed worker with no network or file access.",
+    },
+    {
+        title: "Sandboxed plugins",
+        body: "Write plugins in JavaScript or TypeScript against a typed API. Each one runs in its own Web Worker.",
+    },
+    {
+        title: "VS Code style config",
+        body: "settings.json and keybindings.json with comments, a JSON schema, autocomplete and live reload.",
+    },
+    {
+        title: "Fast rendering",
+        body: "xterm.js on WebGL, ligatures, inline images, clickable links and search across the scrollback.",
+    },
 ];
 ---
+
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Vanitty: a fast, native terminal</title>
-    <meta name="description" content="A fast, native terminal. A Rust + Tauri rewrite of Hyper without Electron." />
-    <link rel="icon" href={`${base}/favicon.svg`} type="image/svg+xml" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  </head>
-  <body>
-    <div class="glow" aria-hidden="true"></div>
-    <header class="nav">
-      <a href={`${base}/`} class="brand"><img src={logo.src} alt="Vanitty" height="28" /></a>
-      <nav>
-        <a href={`${base}/docs/`}>Docs</a>
-        <a href={`${repo}/releases`}>Releases</a>
-        <a href={repo} class="gh">GitHub</a>
-        <a href={sponsor}>Sponsor</a>
-      </nav>
-    </header>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Vanitty: a fast, native terminal</title>
+        <meta
+            name="description"
+            content="A fast, native terminal. A Rust + Tauri rewrite of Hyper without Electron."
+        />
+        <link rel="icon" href={`${base}/favicon.svg`} type="image/svg+xml" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
+        <div class="glow" aria-hidden="true"></div>
+        <header class="nav">
+            <a href={`${base}/`} class="brand">
+                <img src={logo.src} alt="Vanitty" height="28" />
+            </a>
+            <nav>
+                <a href={`${base}/docs/`}>Docs</a>
+                <a href={`${repo}/releases`}>Releases</a>
+                <a href={repo} class="gh">
+                    GitHub
+                </a>
+                <a href={sponsor}>Sponsor</a>
+            </nav>
+        </header>
 
-    <main>
-      <section class="hero">
-        <h1>The terminal,<br /><span class="grad">without the weight.</span></h1>
-        <p class="lede">Vanitty is a fast, native terminal. A Rust + Tauri rewrite of Hyper without Electron. Your Hyper config and themes come with you.</p>
-        <div class="install" data-os="unix">
-          <div class="os-tabs" role="tablist">
-            <button type="button" role="tab" data-pick="unix">macOS / Linux</button>
-            <button type="button" role="tab" data-pick="windows">Windows</button>
-          </div>
-          <div class="cmd">
-            <code data-for="unix"><span class="prompt">$</span> {unixCmd}</code>
-            <code data-for="windows"><span class="prompt">&gt;</span> {winCmd}</code>
-            <button type="button" class="copy" aria-label="Copy install command">Copy</button>
-          </div>
-        </div>
-        <div class="cta">
-          <a class="btn primary" href={`${repo}/releases/latest`}>Download</a>
-          <a class="btn" href={`${base}/docs/install/`}>All install options</a>
-        </div>
-        <p class="platforms">Windows · macOS · Linux (.deb, .rpm, AppImage, Arch)</p>
-        <div class="shot">
-          <Image src={hero} alt="Vanitty running neofetch and git log" widths={[800, 1200]} sizes="(max-width: 1240px) 100vw, 1200px" loading="eager" decoding="sync" />
-        </div>
-      </section>
+        <main>
+            <section class="hero">
+                <h1>
+                    The terminal,
+                    <br />
+                    <span class="grad">without the weight.</span>
+                </h1>
+                <p class="lede">
+                    Vanitty is a fast, native terminal. A Rust + Tauri rewrite of Hyper without
+                    Electron. Your Hyper config and themes come with you.
+                </p>
+                <div class="install" data-os="unix">
+                    <div class="os-tabs" role="tablist">
+                        <button type="button" role="tab" data-pick="unix">
+                            macOS / Linux
+                        </button>
+                        <button type="button" role="tab" data-pick="windows">
+                            Windows
+                        </button>
+                    </div>
+                    <div class="cmd">
+                        <code data-for="unix">
+                            <span class="prompt">$</span> {unixCmd}
+                        </code>
+                        <code data-for="windows">
+                            <span class="prompt">&gt;</span> {winCmd}
+                        </code>
+                        <button type="button" class="copy" aria-label="Copy install command">
+                            Copy
+                        </button>
+                    </div>
+                </div>
+                <div class="cta">
+                    <a class="btn primary" href={`${repo}/releases/latest`}>
+                        Download
+                    </a>
+                    <a class="btn" href={`${base}/docs/install/`}>
+                        All install options
+                    </a>
+                </div>
+                <p class="platforms">Windows · macOS · Linux (.deb, .rpm, AppImage, Arch)</p>
+                <div class="shot">
+                    <Image
+                        src={hero}
+                        alt="Vanitty running neofetch and git log"
+                        widths={[800, 1200]}
+                        sizes="(max-width: 1240px) 100vw, 1200px"
+                        loading="eager"
+                        decoding="sync"
+                    />
+                </div>
+            </section>
 
-      <section class="features">
-        {features.map((f) => (
-          <article>
-            <h3>{f.title}</h3>
-            <p>{f.body}</p>
-          </article>
-        ))}
-      </section>
+            <section class="features">
+                {features.map((f) => (
+                    <article>
+                        <h3>{f.title}</h3>
+                        <p>{f.body}</p>
+                    </article>
+                ))}
+            </section>
 
-      <section class="config">
-        <div>
-          <h2>Configure it like your editor</h2>
-          <p>Settings live in <code>~/.config/vanitty</code> as JSON with comments. Save the file and Vanitty reloads. On first run it imports your Hyper config.</p>
-          <a href={`${base}/docs/settings/`}>All settings →</a>
-        </div>
-        <pre><code><span class="c">// ~/.config/vanitty/settings.json</span>
+            <section class="config">
+                <div>
+                    <h2>Configure it like your editor</h2>
+                    <p>
+                        Settings live in <code>~/.config/vanitty</code> as JSON with comments. Save
+                        the file and Vanitty reloads. On first run it imports your Hyper config.
+                    </p>
+                    <a href={`${base}/docs/settings/`}>All settings →</a>
+                </div>
+                <pre><code><span class="c">// ~/.config/vanitty/settings.json</span>
 {"{"}
   <span class="k">"fontSize"</span>: <span class="n">13</span>,
   <span class="k">"cursorShape"</span>: <span class="s">"BLOCK"</span>,
@@ -90,140 +150,356 @@ const features = [
   <span class="k">"themes"</span>: [<span class="s">"hyper-snazzy"</span>],
   <span class="k">"plugins"</span>: [<span class="s">"vanitty-plugin-example"</span>]
 {"}"}</code></pre>
-      </section>
+            </section>
 
-      <section class="support" id="support">
-        <h2>Support Vanitty</h2>
-        <p>Vanitty is free and open source. If it's part of your day, sponsoring on GitHub helps fund fixes, new features and releases.</p>
-        <a class="btn primary" href={sponsor}>♥ Sponsor on GitHub</a>
-      </section>
-    </main>
+            <section class="support" id="support">
+                <h2>Support Vanitty</h2>
+                <p>
+                    Vanitty is free and open source. If it's part of your day, sponsoring on GitHub
+                    helps fund fixes, new features and releases.
+                </p>
+                <a class="btn primary" href={sponsor}>
+                    ♥ Sponsor on GitHub
+                </a>
+            </section>
+        </main>
 
-    <script>
-      const box = document.querySelector<HTMLElement>(".install")!;
-      const pick = (os: string) => {
-        box.dataset.os = os;
-        box.querySelectorAll<HTMLElement>("[data-pick]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.pick === os)));
-      };
-      pick(/Win/i.test(navigator.userAgent) ? "windows" : "unix");
-      box.querySelectorAll<HTMLElement>("[data-pick]").forEach((b) => b.addEventListener("click", () => pick(b.dataset.pick!)));
-      const copy = box.querySelector<HTMLButtonElement>(".copy")!;
-      copy.addEventListener("click", async () => {
-        const code = box.querySelector<HTMLElement>(`[data-for="${box.dataset.os}"]`)!;
-        await navigator.clipboard.writeText(code.textContent!.replace(/^\s*[$>]\s*/, ""));
-        copy.textContent = "Copied";
-        setTimeout(() => (copy.textContent = "Copy"), 1500);
-      });
-    </script>
-
-    <footer>
-      <p>MIT licensed. Built on the work of <a href="https://github.com/vercel/hyper">Hyper</a>.</p>
-    </footer>
-  </body>
+        <script>
+            const box = document.querySelector<HTMLElement>(".install")!;
+            const pick = (os: string) => {
+                box.dataset.os = os;
+                box.querySelectorAll<HTMLElement>("[data-pick]").forEach((b) =>
+                    b.setAttribute("aria-selected", String(b.dataset.pick === os)),
+                );
+            };
+            pick(/Win/i.test(navigator.userAgent) ? "windows" : "unix");
+            box.querySelectorAll<HTMLElement>("[data-pick]").forEach((b) =>
+                b.addEventListener("click", () => pick(b.dataset.pick!)),
+            );
+            const copy = box.querySelector<HTMLButtonElement>(".copy")!;
+            copy.addEventListener("click", async () => {
+                const code = box.querySelector<HTMLElement>(`[data-for="${box.dataset.os}"]`)!;
+                await navigator.clipboard.writeText(code.textContent!.replace(/^\s*[$>]\s*/, ""));
+                copy.textContent = "Copied";
+                setTimeout(() => (copy.textContent = "Copy"), 1500);
+            });
+        </script>
+        <footer>
+            <p>
+                MIT licensed. Built on the work of{" "}
+                <a href="https://github.com/vercel/hyper">Hyper</a>.
+            </p>
+        </footer>
+    </body>
 </html>
 
 <style is:global>
-  :root {
-    --bg: #09080b;
-    --fg: #f4f4f6;
-    --muted: #a19fab;
-    --line: #24212b;
-    --card: #121016;
-    --pink: #f81ce5;
-    --violet: #7b5cff;
-    color-scheme: dark;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--bg); color: var(--fg); }
-  body { font: 16px/1.6 Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
-  a { color: inherit; }
-  code, pre { font-family: "JetBrains Mono", ui-monospace, monospace; }
+    :root {
+        --bg: #09080b;
+        --fg: #f4f4f6;
+        --muted: #a19fab;
+        --line: #24212b;
+        --card: #121016;
+        --pink: #f81ce5;
+        --violet: #7b5cff;
+        color-scheme: dark;
+    }
+    * {
+        box-sizing: border-box;
+    }
+    html,
+    body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+    }
+    body {
+        font:
+            16px/1.6 Inter,
+            system-ui,
+            sans-serif;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+    }
+    a {
+        color: inherit;
+    }
+    code,
+    pre {
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+    }
 </style>
 
 <style>
-  .glow {
-    position: absolute; inset: -20vh 0 auto; height: 90vh; pointer-events: none;
-    background:
-      radial-gradient(40% 50% at 30% 30%, rgba(248, 28, 229, 0.22), transparent 70%),
-      radial-gradient(40% 50% at 70% 25%, rgba(123, 92, 255, 0.25), transparent 70%);
-    filter: blur(20px);
-  }
-  .nav {
-    position: relative; max-width: 1200px; margin: 0 auto; padding: 20px 16px;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .nav nav { display: flex; gap: 24px; font-size: 15px; }
-  .nav nav a { text-decoration: none; color: var(--muted); }
-  .nav nav a:hover { color: var(--fg); }
-  .brand img { display: block; }
-  main { position: relative; max-width: 1200px; margin: 0 auto; padding: 0 16px; }
-  .hero { text-align: center; padding: 72px 0 40px; }
-  h1 { font-size: clamp(32px, 8.5vw, 76px); line-height: 1.05; letter-spacing: -0.03em; margin: 0 0 20px; font-weight: 700; }
-  .grad { background: linear-gradient(90deg, var(--pink), var(--violet)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .lede { max-width: 620px; margin: 0 auto 32px; color: var(--muted); font-size: 18px; }
-  .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-  .btn {
-    padding: 12px 22px; border-radius: 10px; text-decoration: none; font-weight: 600;
-    border: 1px solid var(--line); background: var(--card);
-  }
-  .btn:hover { border-color: #3a3642; }
-  .btn.primary { border: 0; background: linear-gradient(90deg, var(--pink), var(--violet)); color: #fff; }
-  .btn.primary:hover { filter: brightness(1.1); }
-  .install { max-width: 560px; margin: 0 auto 24px; text-align: left; }
-  .os-tabs { display: flex; gap: 4px; margin-bottom: 8px; justify-content: center; }
-  .os-tabs button {
-    font: inherit; font-size: 13px; color: var(--muted); background: none; border: 0;
-    padding: 4px 10px; border-radius: 6px; cursor: pointer;
-  }
-  .os-tabs button[aria-selected="true"] { color: var(--fg); background: var(--card); }
-  .cmd {
-    display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 16px;
-    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-  }
-  .cmd code { flex: 1; min-width: 0; font-size: 14px; white-space: nowrap; overflow-x: auto; display: none; }
-  .install[data-os="unix"] [data-for="unix"], .install[data-os="windows"] [data-for="windows"] { display: block; }
-  .prompt { color: var(--muted); user-select: none; margin-right: 8px; }
-  .copy {
-    font: inherit; font-size: 13px; font-weight: 600; color: var(--fg); cursor: pointer;
-    background: none; border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px;
-  }
-  .copy:hover { border-color: #3a3642; }
-  .platforms { color: var(--muted); font-size: 14px; margin: 16px 0 56px; }
-  .shot img {
-    width: 100%; height: auto; border-radius: 12px;
-    box-shadow: 0 40px 120px -20px rgba(123, 92, 255, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06);
-  }
-  .features {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 16px; padding: 64px 0;
-  }
-  .features article { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
-  .features h3 { margin: 0 0 8px; font-size: 18px; }
-  .features p { margin: 0; color: var(--muted); }
-  .config {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px;
-    align-items: center; padding: 32px 0 96px;
-  }
-  .config > * { min-width: 0; }
-  .config h2 { font-size: 32px; letter-spacing: -0.02em; margin: 0 0 12px; }
-  .config p { color: var(--muted); }
-  .config a { color: #c9a8ff; text-decoration: none; font-weight: 600; }
-  .config pre {
-    margin: 0; padding: 24px; border-radius: 14px; background: var(--card); border: 1px solid var(--line);
-    font-size: 14px; line-height: 1.7; overflow-x: auto;
-  }
-  .config code { font-size: 0.9em; }
-  .c { color: #6b6875; } .k { color: #ff8fe9; } .s { color: #b5f4a5; } .n { color: #c9a8ff; }
-  .support {
-    text-align: center; max-width: 720px; margin: 0 auto 96px; padding: 40px 24px;
-    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
-  }
-  .support h2 { font-size: 32px; letter-spacing: -0.02em; margin: 0 0 12px; }
-  .support p { color: var(--muted); margin: 0 auto 24px; max-width: 560px; }
-  .support .btn { display: inline-block; }
-  footer { border-top: 1px solid var(--line); text-align: center; color: var(--muted); font-size: 14px; padding: 32px 16px; }
-  @media (max-width: 600px) {
-    .nav nav { gap: 16px; }
-    .hero { padding-top: 40px; }
-  }
+    .glow {
+        position: absolute;
+        inset: -20vh 0 auto;
+        height: 90vh;
+        pointer-events: none;
+        background:
+            radial-gradient(40% 50% at 30% 30%, rgba(248, 28, 229, 0.22), transparent 70%),
+            radial-gradient(40% 50% at 70% 25%, rgba(123, 92, 255, 0.25), transparent 70%);
+        filter: blur(20px);
+    }
+    .nav {
+        position: relative;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .nav nav {
+        display: flex;
+        gap: 24px;
+        font-size: 15px;
+    }
+    .nav nav a {
+        text-decoration: none;
+        color: var(--muted);
+    }
+    .nav nav a:hover {
+        color: var(--fg);
+    }
+    .brand img {
+        display: block;
+    }
+    main {
+        position: relative;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 16px;
+    }
+    .hero {
+        text-align: center;
+        padding: 72px 0 40px;
+    }
+    h1 {
+        font-size: clamp(32px, 8.5vw, 76px);
+        line-height: 1.05;
+        letter-spacing: -0.03em;
+        margin: 0 0 20px;
+        font-weight: 700;
+    }
+    .grad {
+        background: linear-gradient(90deg, var(--pink), var(--violet));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    .lede {
+        max-width: 620px;
+        margin: 0 auto 32px;
+        color: var(--muted);
+        font-size: 18px;
+    }
+    .cta {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    .btn {
+        padding: 12px 22px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+        border: 1px solid var(--line);
+        background: var(--card);
+    }
+    .btn:hover {
+        border-color: #3a3642;
+    }
+    .btn.primary {
+        border: 0;
+        background: linear-gradient(90deg, var(--pink), var(--violet));
+        color: #fff;
+    }
+    .btn.primary:hover {
+        filter: brightness(1.1);
+    }
+    .install {
+        max-width: 560px;
+        margin: 0 auto 24px;
+        text-align: left;
+    }
+    .os-tabs {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 8px;
+        justify-content: center;
+    }
+    .os-tabs button {
+        font: inherit;
+        font-size: 13px;
+        color: var(--muted);
+        background: none;
+        border: 0;
+        padding: 4px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+    .os-tabs button[aria-selected="true"] {
+        color: var(--fg);
+        background: var(--card);
+    }
+    .cmd {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 12px 12px 16px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+    }
+    .cmd code {
+        flex: 1;
+        min-width: 0;
+        font-size: 14px;
+        white-space: nowrap;
+        overflow-x: auto;
+        display: none;
+    }
+    .install[data-os="unix"] [data-for="unix"],
+    .install[data-os="windows"] [data-for="windows"] {
+        display: block;
+    }
+    .prompt {
+        color: var(--muted);
+        user-select: none;
+        margin-right: 8px;
+    }
+    .copy {
+        font: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--fg);
+        cursor: pointer;
+        background: none;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 4px 10px;
+    }
+    .copy:hover {
+        border-color: #3a3642;
+    }
+    .platforms {
+        color: var(--muted);
+        font-size: 14px;
+        margin: 16px 0 56px;
+    }
+    .shot img {
+        width: 100%;
+        height: auto;
+        border-radius: 12px;
+        box-shadow:
+            0 40px 120px -20px rgba(123, 92, 255, 0.45),
+            0 0 0 1px rgba(255, 255, 255, 0.06);
+    }
+    .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
+        padding: 64px 0;
+    }
+    .features article {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 24px;
+    }
+    .features h3 {
+        margin: 0 0 8px;
+        font-size: 18px;
+    }
+    .features p {
+        margin: 0;
+        color: var(--muted);
+    }
+    .config {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 40px;
+        align-items: center;
+        padding: 32px 0 96px;
+    }
+    .config > * {
+        min-width: 0;
+    }
+    .config h2 {
+        font-size: 32px;
+        letter-spacing: -0.02em;
+        margin: 0 0 12px;
+    }
+    .config p {
+        color: var(--muted);
+    }
+    .config a {
+        color: #c9a8ff;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    .config pre {
+        margin: 0;
+        padding: 24px;
+        border-radius: 14px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        font-size: 14px;
+        line-height: 1.7;
+        overflow-x: auto;
+    }
+    .config code {
+        font-size: 0.9em;
+    }
+    .c {
+        color: #6b6875;
+    }
+    .k {
+        color: #ff8fe9;
+    }
+    .s {
+        color: #b5f4a5;
+    }
+    .n {
+        color: #c9a8ff;
+    }
+    .support {
+        text-align: center;
+        max-width: 720px;
+        margin: 0 auto 96px;
+        padding: 40px 24px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+    }
+    .support h2 {
+        font-size: 32px;
+        letter-spacing: -0.02em;
+        margin: 0 0 12px;
+    }
+    .support p {
+        color: var(--muted);
+        margin: 0 auto 24px;
+        max-width: 560px;
+    }
+    .support .btn {
+        display: inline-block;
+    }
+    footer {
+        border-top: 1px solid var(--line);
+        text-align: center;
+        color: var(--muted);
+        font-size: 14px;
+        padding: 32px 16px;
+    }
+    @media (max-width: 600px) {
+        .nav nav {
+            gap: 16px;
+        }
+        .hero {
+            padding-top: 40px;
+        }
+    }
 </style>

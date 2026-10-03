@@ -21,10 +21,11 @@ The frontend (React 19, Zustand, xterm.js) is in `src/`. The Rust side (PTY, con
 
 ## Before opening a pull request
 
-Run these and make sure they pass:
+Run these and make sure they pass (`just check` runs them all, `just fmt` fixes formatting):
 
 ```sh
 pnpm typecheck
+pnpm format:check
 cargo fmt --manifest-path src-tauri/Cargo.toml --check
 cargo clippy --manifest-path src-tauri/Cargo.toml
 cargo test --manifest-path src-tauri/Cargo.toml

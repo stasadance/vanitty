@@ -1,5 +1,5 @@
 {
-  "name": "hello",
-  "version": "1.0.0",
-  "main": "index.js"
+    "name": "hello",
+    "version": "1.0.0",
+    "main": "index.js"
 }

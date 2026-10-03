@@ -1,0 +1,6 @@
+pnpm-lock.yaml
+src-tauri/gen/
+src-tauri/target/
+src-tauri/dist/
+website/dist/
+website/.astro/

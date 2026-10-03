@@ -24,8 +24,8 @@ A plugin is a CommonJS package whose `main` exports `activate(vanitty)` and opti
 
 ```js
 exports.activate = (vanitty) => {
-  vanitty.commands.register("greet", () => vanitty.terminals.write("echo hi\r"));
-  vanitty.ui.setHeaderItem("status", { text: "hi", command: "hello:greet" });
+    vanitty.commands.register("greet", () => vanitty.terminals.write("echo hi\r"));
+    vanitty.ui.setHeaderItem("status", { text: "hi", command: "hello:greet" });
 };
 ```
 
