@@ -4,6 +4,18 @@ version = "26.10.0"
 description = "A fast, native terminal built with Rust and Tauri"
 license = "MIT"
 edition = "2024"
+repository = "https://github.com/stasadance/vanitty"
+# Run `pnpm build` first: the crate embeds the UI from dist/. gen/schemas is
+# listed so tauri-build's output matches the package during `cargo publish`.
+include = [
+  "/src",
+  "/build.rs",
+  "/tauri.conf.json",
+  "/capabilities",
+  "/icons",
+  "/dist",
+  "/gen/schemas",
+]
 
 [lib]
 # The `_lib` suffix may seem redundant but it is necessary
