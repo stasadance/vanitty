@@ -1,5 +1,5 @@
 import { Menu, MenuItem, PredefinedMenuItem, Submenu, type MenuItemOptions } from "@tauri-apps/api/menu";
-import { LogicalPosition } from "@tauri-apps/api/dpi";
+import { PhysicalPosition } from "@tauri-apps/api/dpi";
 import { runCommand } from "./commands";
 import { isMac, keyFor } from "./config/keymaps";
 import { getState } from "./store";
@@ -140,12 +140,22 @@ export async function installAppMenu() {
   await menu.setAsAppMenu();
 }
 
-export async function popupHamburger(x: number, y: number) {
-  const menu = await Menu.new({ items: await submenus() });
-  await menu.popup(new LogicalPosition(x, y));
+/**
+ * Window position for a point in page (CSS) pixels. Without one the menu asks
+ * the system for the pointer, which Wayland doesn't tell, and the page zoom on
+ * Linux means CSS pixels aren't window pixels, so go through devicePixelRatio,
+ * which counts both the zoom and the display scale.
+ */
+function at(x: number, y: number) {
+  return new PhysicalPosition(Math.round(x * devicePixelRatio), Math.round(y * devicePixelRatio));
 }
 
-export async function popupContextMenu() {
+export async function popupHamburger(x: number, y: number) {
+  const menu = await Menu.new({ items: await submenus() });
+  await menu.popup(at(x, y));
+}
+
+export async function popupContextMenu(x: number, y: number) {
   const newTabProfiles = await profileItems("tab:new");
   const menu = await Menu.new({
     items: [
@@ -166,11 +176,11 @@ export async function popupContextMenu() {
       await item("Settings…", "window:preferences", false),
     ],
   });
-  await menu.popup();
+  await menu.popup(at(x, y));
 }
 
 /** Right-click on the title bar: settings and the webview inspector. */
-export async function popupTitleMenu() {
+export async function popupTitleMenu(x: number, y: number) {
   const menu = await Menu.new({
     items: [
       await item("Open Settings", "window:preferences", false),
@@ -179,5 +189,5 @@ export async function popupTitleMenu() {
       await item("Inspect Element", "window:devtools", false),
     ],
   });
-  await menu.popup();
+  await menu.popup(at(x, y));
 }
