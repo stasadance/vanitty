@@ -1,5 +1,8 @@
 # Config for the release notes GitHub generates from merged PRs.
 changelog:
     exclude:
+        # Version bump PRs opened by `just release`.
+        labels:
+            - release
         authors:
             - dependabot

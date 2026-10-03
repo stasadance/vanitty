@@ -50,10 +50,14 @@ run(`git commit -m "Release v${version}"`);
 run(`git push -u origin ${branch}`);
 
 const body = `Bumps the version to ${version}. Merging this releases v${version}.`;
+// The "release" label keeps this PR out of the release notes (.github/release.yml).
 try {
-    run(`gh pr create --base main --head ${branch} --title "Release v${version}" --body "${body}"`);
+    run(`gh label create release --color ededed --description "Version bump PR" --force`);
+    run(
+        `gh pr create --base main --head ${branch} --title "Release v${version}" --body "${body}" --label release`,
+    );
 } catch {
     console.log(
-        `\nOpen the PR: https://github.com/stasadance/vanitty/compare/main...${branch}?expand=1`,
+        `\nOpen the PR: https://github.com/stasadance/vanitty/compare/main...${branch}?expand=1&labels=release`,
     );
 }
