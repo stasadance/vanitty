@@ -5,6 +5,7 @@ import hero from "../assets/window-hero.png";
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, "");
 const repo = "https://github.com/stasadance/vanitty";
+const sponsor = "https://github.com/sponsors/stasadance";
 
 const features = [
   { title: "Native, not Electron", body: "Rust and Tauri under the hood, with the system webview instead of a bundled Chromium." },
@@ -35,6 +36,7 @@ const features = [
         <a href={`${base}/docs/`}>Docs</a>
         <a href={`${repo}/releases`}>Releases</a>
         <a href={repo} class="gh">GitHub</a>
+        <a href={sponsor}>Sponsor</a>
       </nav>
     </header>
 
@@ -75,6 +77,12 @@ const features = [
   <span class="k">"themes"</span>: [<span class="s">"hyper-snazzy"</span>],
   <span class="k">"plugins"</span>: [<span class="s">"vanitty-plugin-example"</span>]
 {"}"}</code></pre>
+      </section>
+
+      <section class="support" id="support">
+        <h2>Support Vanitty</h2>
+        <p>Vanitty is free and open source. If it's part of your day, sponsoring on GitHub helps fund fixes, new features and releases.</p>
+        <a class="btn primary" href={sponsor}>♥ Sponsor on GitHub</a>
       </section>
     </main>
 
@@ -157,6 +165,13 @@ const features = [
   }
   .config code { font-size: 0.9em; }
   .c { color: #6b6875; } .k { color: #ff8fe9; } .s { color: #b5f4a5; } .n { color: #c9a8ff; }
+  .support {
+    text-align: center; max-width: 720px; margin: 0 auto 96px; padding: 40px 24px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  }
+  .support h2 { font-size: 32px; letter-spacing: -0.02em; margin: 0 0 12px; }
+  .support p { color: var(--muted); margin: 0 auto 24px; max-width: 560px; }
+  .support .btn { display: inline-block; }
   footer { border-top: 1px solid var(--line); text-align: center; color: var(--muted); font-size: 14px; padding: 32px 16px; }
   @media (max-width: 600px) {
     .nav nav { gap: 16px; }
