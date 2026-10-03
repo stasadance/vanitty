@@ -241,6 +241,11 @@ body,
     color: #fff;
 }
 
+.tab_dragging .tab_text {
+    cursor: grabbing;
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
 .tab_hasActivity,
 .tab_hasActivity:hover {
     color: #50e3c2;

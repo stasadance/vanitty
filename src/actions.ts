@@ -328,6 +328,17 @@ export function moveTab(delta: number) {
     selectTab(tabs[(i + delta + tabs.length) % tabs.length]);
 }
 
+/** Moves a tab to `index` in the tab bar. */
+export function reorderTab(rootUid: string, index: number) {
+    setState((st) => {
+        const from = st.tabs.indexOf(rootUid);
+        if (from < 0 || from === index) return {};
+        const tabs = st.tabs.filter((t) => t !== rootUid);
+        tabs.splice(index, 0, rootUid);
+        return { tabs };
+    });
+}
+
 export function jumpTab(index: number | "last") {
     const { tabs } = getState();
     const target = index === "last" ? tabs.at(-1) : tabs[index];

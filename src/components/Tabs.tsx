@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { closeTab, selectTab } from "../actions";
+import { closeTab, reorderTab, selectTab } from "../actions";
 import { isMac } from "../config/keymaps";
 import { getState, useStore } from "../store";
 import { ChevronDown, CloseTab } from "./icons";
@@ -10,8 +10,13 @@ interface Props {
     onNewTab: (profile?: string) => void;
 }
 
+/** How far the pointer moves before a press on a tab becomes a drag. */
+const DRAG_THRESHOLD = 4;
+
 export function Tabs({ titles, activeIndex, onNewTab }: Props) {
     const tabs = useStore((s) => s.tabs);
+    const listRef = useRef<HTMLUListElement>(null);
+    const [dragging, setDragging] = useState<string | null>(null);
     const sessions = useStore((s) => s.sessions);
     const groups = useStore((s) => s.groups);
     const borderColor = useStore((s) => s.config.borderColor);
@@ -28,6 +33,30 @@ export function Tabs({ titles, activeIndex, onNewTab }: Props) {
         return walk(root);
     };
 
+    /** Drags a tab along the bar; it takes the place of the tab under the pointer. */
+    const startDrag = (e: React.MouseEvent, root: string) => {
+        if (e.button !== 0) return;
+        const startX = e.clientX;
+        let moved = false;
+        const move = (ev: MouseEvent) => {
+            if (!moved && Math.abs(ev.clientX - startX) < DRAG_THRESHOLD) return;
+            if (!moved) {
+                moved = true;
+                setDragging(root);
+            }
+            const items = [...(listRef.current?.children ?? [])];
+            const over = items.findIndex((el) => ev.clientX < el.getBoundingClientRect().right);
+            reorderTab(root, over < 0 ? items.length - 1 : over);
+        };
+        const up = () => {
+            window.removeEventListener("mousemove", move);
+            window.removeEventListener("mouseup", up);
+            setDragging(null);
+        };
+        window.addEventListener("mousemove", move);
+        window.addEventListener("mouseup", up);
+    };
+
     return (
         <nav
             className={`tabs_nav ${hide ? "tabs_hiddenNav" : ""} ${isMac ? "" : "tabs_navShifted"}`}
@@ -41,6 +70,7 @@ export function Tabs({ titles, activeIndex, onNewTab }: Props) {
             {tabs.length > 1 && (
                 <>
                     <ul
+                        ref={listRef}
                         className={`tabs_list ${isMac ? "tabs_listMac" : ""} ${fullScreen && isMac ? "tabs_fullScreen" : ""}`}
                     >
                         {tabs.map((root, i) => {
@@ -53,10 +83,11 @@ export function Tabs({ titles, activeIndex, onNewTab }: Props) {
                                     style={{ borderColor }}
                                     className={`tab_tab ${isFirst ? "tab_first" : ""} ${isActive ? "tab_active" : ""} ${
                                         isFirst && isActive ? "tab_firstActive" : ""
-                                    } ${activity ? "tab_hasActivity" : ""}`}
+                                    } ${activity ? "tab_hasActivity" : ""} ${dragging === root ? "tab_dragging" : ""}`}
                                 >
                                     <span
                                         className={`tab_text ${i === tabs.length - 1 ? "tab_textLast" : ""} ${isActive ? "tab_textActive" : ""}`}
+                                        onMouseDown={(e) => startDrag(e, root)}
                                         onClick={(e) => {
                                             if (e.button === 0 && !isActive) selectTab(root);
                                         }}
