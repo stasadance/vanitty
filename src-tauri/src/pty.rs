@@ -86,6 +86,39 @@ fn default_args() -> Vec<String> {
     }
 }
 
+/// Variables the AppImage runtime and its launch scripts set for Vanitty
+/// itself. Shells must not inherit them.
+const APPIMAGE_VARS: &[&str] = &["APPDIR", "APPIMAGE", "ARGV0", "OWD", "GTK_THEME"];
+
+/// When running as an AppImage, the launcher points `LD_LIBRARY_PATH`, `PATH`,
+/// `XDG_DATA_DIRS`, the GTK and GIO module paths and more at the bundled
+/// libraries. A shell that inherits them makes system programs load those
+/// older libraries and fail with symbol lookup errors. Returns the changes
+/// that restore the user's own environment: entries under `appdir` are
+/// dropped from list variables, and variables left empty are removed.
+fn appimage_env(
+    appdir: &str,
+    vars: impl Iterator<Item = (String, String)>,
+) -> Vec<(String, Option<String>)> {
+    let appdir = appdir.trim_end_matches('/');
+    let mut changes = Vec::new();
+    for (key, value) in vars {
+        if APPIMAGE_VARS.contains(&key.as_str()) {
+            changes.push((key, None));
+            continue;
+        }
+        if !value.contains(appdir) {
+            continue;
+        }
+        let kept: Vec<&str> = value
+            .split(':')
+            .filter(|p| !p.is_empty() && !p.starts_with(appdir))
+            .collect();
+        changes.push((key, (!kept.is_empty()).then(|| kept.join(":"))));
+    }
+    changes
+}
+
 fn resolve_cwd(cwd: Option<String>) -> Option<PathBuf> {
     cwd.filter(|c| !c.is_empty())
         .map(|c| {
@@ -122,6 +155,14 @@ pub fn pty_spawn(
 
     let mut cmd = CommandBuilder::new(&shell);
     cmd.args(&args);
+    if let Some(appdir) = std::env::var("APPDIR").ok().filter(|d| !d.is_empty()) {
+        for (key, value) in appimage_env(&appdir, std::env::vars()) {
+            match value {
+                Some(v) => cmd.env(key, v),
+                None => cmd.env_remove(key),
+            }
+        }
+    }
     cmd.env("TERM", "xterm-256color");
     cmd.env("COLORTERM", "truecolor");
     cmd.env("TERM_PROGRAM", "Vanitty");
@@ -284,5 +325,62 @@ impl PtyManager {
                 let _ = pty.killer.kill();
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn vars(list: &[(&str, &str)]) -> impl Iterator<Item = (String, String)> {
+        list.iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect::<Vec<_>>()
+            .into_iter()
+    }
+
+    #[test]
+    fn strips_appimage_paths() {
+        let app = "/tmp/.mount_VanittXYZ";
+        let changes = appimage_env(
+            app,
+            vars(&[
+                (
+                    "LD_LIBRARY_PATH",
+                    "/tmp/.mount_VanittXYZ/usr/lib/:/tmp/.mount_VanittXYZ/lib/:",
+                ),
+                (
+                    "PATH",
+                    "/tmp/.mount_VanittXYZ/usr/bin/:/usr/local/bin:/usr/bin",
+                ),
+                (
+                    "XDG_DATA_DIRS",
+                    "/tmp/.mount_VanittXYZ/usr/share:/usr/share:/usr/local/share",
+                ),
+                (
+                    "GIO_MODULE_DIR",
+                    "/tmp/.mount_VanittXYZ//usr/lib/gio/modules",
+                ),
+                ("APPDIR", app),
+                ("GTK_THEME", "Adwaita:dark"),
+                ("HOME", "/home/stas"),
+            ]),
+        );
+        let get = |k: &str| {
+            changes
+                .iter()
+                .find(|(key, _)| key == k)
+                .map(|(_, v)| v.clone())
+        };
+        assert_eq!(get("LD_LIBRARY_PATH"), Some(None));
+        assert_eq!(get("PATH"), Some(Some("/usr/local/bin:/usr/bin".into())));
+        assert_eq!(
+            get("XDG_DATA_DIRS"),
+            Some(Some("/usr/share:/usr/local/share".into()))
+        );
+        assert_eq!(get("GIO_MODULE_DIR"), Some(None));
+        assert_eq!(get("APPDIR"), Some(None));
+        assert_eq!(get("GTK_THEME"), Some(None));
+        assert_eq!(get("HOME"), None);
     }
 }
