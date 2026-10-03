@@ -150,9 +150,8 @@ export async function installAppMenu() {
 
 /**
  * Window position for a point in page (CSS) pixels. Without one the menu asks
- * the system for the pointer, which Wayland doesn't tell, and the page zoom on
- * Linux means CSS pixels aren't window pixels, so go through devicePixelRatio,
- * which counts both the zoom and the display scale.
+ * the system for the pointer, which Wayland doesn't tell. CSS pixels aren't
+ * window pixels on a scaled display, so go through devicePixelRatio.
  */
 function at(x: number, y: number) {
     return new PhysicalPosition(Math.round(x * devicePixelRatio), Math.round(y * devicePixelRatio));

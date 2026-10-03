@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { profileConfig, resizeGroup, setActiveSession, setSearch } from "../actions";
-import { isMac } from "../config/keymaps";
+import { isMac, uiScale } from "../config/keymaps";
 import { popupContextMenu } from "../menu";
 import { terms } from "../terms/registry";
 import { useStore } from "../store";
@@ -12,7 +12,7 @@ export function Terms() {
     const activeRoot = useStore((s) => s.activeRoot);
     // Linux and Windows draw a title bar row, plus a tab row once there are tabs.
     const shifted = !isMac && tabs.length > 1;
-    const top = isMac ? 34 : shifted ? 68 : 34;
+    const top = (isMac ? 34 : shifted ? 68 : 34) * uiScale;
     return (
         <div
             className={`terms_terms ${shifted ? "terms_termsShifted" : "terms_termsNotShifted"}`}

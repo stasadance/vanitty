@@ -6,6 +6,12 @@ export const platform: Platform = /Mac/.test(navigator.userAgent)
       ? "windows"
       : "linux";
 export const isMac = platform === "macos";
+/**
+ * Hyper zooms its page to 1.2 on Linux to get a normal default size there.
+ * Vanitty scales the UI with CSS zoom and the terminal font by the same factor
+ * instead, so devicePixelRatio stays whole and WebGL text stays sharp.
+ */
+export const uiScale = platform === "linux" ? 1.2 : 1;
 
 type Keymap = Record<string, string | string[]>;
 

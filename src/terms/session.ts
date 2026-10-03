@@ -11,7 +11,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import Color from "color";
 import type { TermConfig } from "../config/defaults";
-import { platform } from "../config/keymaps";
+import { platform, uiScale } from "../config/keymaps";
 import { DEFAULT_BELL } from "./bell";
 import {
     killPty,
@@ -50,15 +50,15 @@ export function termOptions(c: TermConfig, fontSize: number): ITerminalOptions {
         cursorStyle: CURSOR_STYLES[c.cursorShape] ?? "block",
         cursorBlink: c.cursorBlink,
         fontFamily: c.fontFamily,
-        fontSize,
+        fontSize: fontSize * uiScale,
         fontWeight: c.fontWeight as ITerminalOptions["fontWeight"],
         fontWeightBold: c.fontWeightBold as ITerminalOptions["fontWeightBold"],
         lineHeight: c.lineHeight,
-        letterSpacing: c.letterSpacing,
+        letterSpacing: c.letterSpacing * uiScale,
         allowTransparency: transparent,
         screenReaderMode: c.screenReaderMode,
         windowsPty: platform === "windows" ? { backend: "conpty" } : undefined,
-        overviewRuler: { width: 10 },
+        overviewRuler: { width: 10 * uiScale },
         allowProposedApi: true,
         theme: {
             foreground: c.foregroundColor,
@@ -319,7 +319,11 @@ export class TermSession {
 
     /** Padding goes on xterm's own element so the fit addon accounts for it. */
     private applyPadding() {
-        if (this.term.element) this.term.element.style.padding = this.config.padding;
+        if (!this.term.element) return;
+        this.term.element.style.padding = this.config.padding.replace(
+            /(\d*\.?\d+)px/g,
+            (_, n: string) => `${Number(n) * uiScale}px`,
+        );
     }
 
     /** Must run before the WebGL addon loads so its atlas gets the font features. */
