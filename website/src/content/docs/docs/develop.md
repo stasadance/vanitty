@@ -16,7 +16,7 @@ Tauri v2, `portable-pty`, xterm.js, React 19 with the React Compiler, Zustand.
 
 ## Releases
 
-Versions are `YY.MM.PATCH`; PATCH starts at 0 each month. `pnpm release` bumps the version, commits and tags it (`--push` also pushes). Pushing a `v*` tag, or running the Release workflow from the Actions tab, builds Windows (`.msi`, `.exe`) and Linux (`.deb`, `.rpm`, `.AppImage`) installers and attaches them to a GitHub release.
+Versions are `YY.MM.PATCH`; PATCH starts at 0 each month. `pnpm release` bumps the version, commits and tags it (`--push` also pushes). Pushing a `v*` tag, or running the Release workflow from the Actions tab, builds Windows (`.msi`, `.exe`) Linux (`.deb`, `.rpm`, `.AppImage`) and macOS (`.dmg`) installers and attaches them to a GitHub release.
 
 ## This website
 

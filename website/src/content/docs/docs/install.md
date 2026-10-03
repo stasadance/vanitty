@@ -1,9 +1,9 @@
 ---
 title: Install
-description: Download Vanitty for Windows and Linux.
+description: Download Vanitty for Windows, Linux and macOS.
 ---
 
-Installers for Windows and Linux are attached to each [GitHub release](https://github.com/stasadance/vanitty/releases):
+Installers for Windows, Linux and macOS are attached to each [GitHub release](https://github.com/stasadance/vanitty/releases):
 
 | Platform | Files |
 | --- | --- |
@@ -11,6 +11,15 @@ Installers for Windows and Linux are attached to each [GitHub release](https://g
 | Debian, Ubuntu | `.deb` |
 | Fedora, openSUSE | `.rpm` |
 | Any Linux | `.AppImage` |
+| macOS (Apple Silicon and Intel) | `.dmg` |
+
+## macOS
+
+The macOS build isn't notarized yet, so macOS blocks it on first launch. After moving Vanitty to Applications, either open it once, then click **Open Anyway** in System Settings > Privacy & Security, or run:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/Vanitty.app
+```
 
 ## Arch Linux
 

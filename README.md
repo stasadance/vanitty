@@ -51,7 +51,13 @@ They're downloaded into `themes/` and their `decorateConfig` runs in a Web Worke
 
 ## Install
 
-Installers for Windows and Linux are attached to each [release](https://github.com/stasadance/vanitty/releases).
+Installers for Windows, Linux and macOS (one universal `.dmg` for Apple Silicon and Intel) are attached to each [release](https://github.com/stasadance/vanitty/releases).
+
+The macOS build isn't notarized yet, so macOS blocks it on first launch. After moving Vanitty to Applications, either open it once, then click **Open Anyway** in System Settings > Privacy & Security, or run:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/Vanitty.app
+```
 
 On Arch Linux, build the package from the repo:
 
@@ -71,7 +77,7 @@ pnpm tauri dev
 
 ## Releases
 
-Versions are `YY.MM.PATCH`; PATCH starts at 0 each month. `pnpm release` bumps the version, commits and tags it (`--push` also pushes). Pushing a `v*` tag, or running the Release workflow from the Actions tab (which releases the version in `package.json`), runs the Release workflow, which builds Windows (`.msi`, `.exe`) and Linux (`.deb`, `.rpm`, `.AppImage`) installers and attaches them to a GitHub release.
+Versions are `YY.MM.PATCH`; PATCH starts at 0 each month. `pnpm release` bumps the version, commits and tags it (`--push` also pushes). Pushing a `v*` tag, or running the Release workflow from the Actions tab (which releases the version in `package.json`), runs the Release workflow, which builds Windows (`.msi`, `.exe`) Linux (`.deb`, `.rpm`, `.AppImage`) and macOS (`.dmg`) installers and attaches them to a GitHub release.
 
 ## Stack
 
