@@ -1,8 +1,6 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">
-    <img alt="Vanitty" src="docs/assets/logo-light.svg" width="360">
-  </picture>
+  <img alt="Vanitty" src="docs/assets/logo-light.svg#gh-light-mode-only" width="360">
+  <img alt="Vanitty" src="docs/assets/logo-dark.svg#gh-dark-mode-only" width="360">
 </p>
 
 A fast, native terminal. A Rust + Tauri rewrite of [Hyper](https://github.com/vercel/hyper) without Electron.
