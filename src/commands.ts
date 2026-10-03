@@ -61,6 +61,8 @@ export const COMMANDS: Record<string, Command> = {
   },
   "window:hamburgerMenu": () => window.dispatchEvent(new CustomEvent("vanitty:hamburger")),
   "app:quit": async () => {
+    // Keep every window for the next launch, not just the last one closed.
+    await invoke("session_quitting").catch(() => {});
     for (const w of await getAllWindows()) await w.close();
   },
   "app:importHyper": async () => {

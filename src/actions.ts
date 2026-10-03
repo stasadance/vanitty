@@ -1,6 +1,7 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { Config, TermConfig } from "./config/defaults";
 import { emit, wants } from "./plugins/host";
+import { markDirty } from "./persist";
 import { ptyCwd } from "./terms/pty";
 import { terms } from "./terms/registry";
 import { TermSession } from "./terms/session";
@@ -37,7 +38,14 @@ export const markResized = () => {
   lastResize = Date.now();
 };
 
-async function newSession(profileName: string | undefined): Promise<string> {
+/** A pane from the last run to bring back. */
+export interface RestoredPane {
+  uid: string;
+  cwd?: string;
+  screen?: string;
+}
+
+export async function newSession(profileName: string | undefined, restored?: RestoredPane): Promise<string> {
   const s = getState();
   const profile =
     profileName && s.config.profiles.some((p) => p.name === profileName)
@@ -48,11 +56,13 @@ async function newSession(profileName: string | undefined): Promise<string> {
   let cwd = config.workingDirectory;
   const active = activeSessionUid(s);
   const activePty = active ? terms.get(active)?.ptyId : undefined;
-  if (s.config.preserveCWD && activePty !== undefined) {
+  if (restored) {
+    cwd = restored.cwd || cwd;
+  } else if (s.config.preserveCWD && activePty !== undefined) {
     cwd = (await ptyCwd(activePty).catch(() => null)) || cwd;
   }
 
-  const sessionUid = uid("s");
+  const sessionUid = restored?.uid ?? uid("s");
   const decoder = new TextDecoder();
   const session = new TermSession(
     sessionUid,
@@ -68,6 +78,7 @@ async function newSession(profileName: string | undefined): Promise<string> {
         if (wants("terminal.input")) emit("terminal.input", { id: sessionUid, data });
       },
       onData: (bytes) => {
+        markDirty();
         if (wants("terminal.data")) emit("terminal.data", { id: sessionUid, data: decoder.decode(bytes, { stream: true }) });
         const st = getState();
         const g = groupOfSession(st.groups, sessionUid);
@@ -82,6 +93,7 @@ async function newSession(profileName: string | undefined): Promise<string> {
       onSearchResults: (searchResults) => updateSession(sessionUid, { searchResults }),
     },
     (shell, ptyId) => updateSession(sessionUid, { shell, ptyId }),
+    restored?.screen,
   );
   terms.set(sessionUid, session);
   setState((st) => ({

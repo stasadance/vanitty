@@ -1,6 +1,7 @@
 mod config;
 mod packages;
 mod pty;
+mod session;
 mod window;
 
 use tauri::webview::PageLoadEvent;
@@ -13,6 +14,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(window::state_plugin())
         .manage(pty::PtyManager::default())
+        .manage(session::SessionStore::load())
         .invoke_handler(tauri::generate_handler![
             pty::pty_spawn,
             pty::pty_write,
@@ -28,6 +30,10 @@ pub fn run() {
             packages::packages_install,
             packages::packages_sources,
             window::window_new,
+            session::session_take,
+            session::session_save,
+            session::session_clear,
+            session::session_quitting,
         ])
         .on_page_load(|webview, payload| {
             if payload.event() == PageLoadEvent::Started {
@@ -41,6 +47,7 @@ pub fn run() {
                 window
                     .state::<pty::PtyManager>()
                     .kill_window(window.label());
+                session::SessionStore::window_closed(window.app_handle(), window.label());
             }
         })
         .setup(|app| {
