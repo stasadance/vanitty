@@ -9,6 +9,14 @@ const unixCmd = "curl -fsSL https://vanitty.dev/install.sh | sh";
 const winCmd = "irm https://vanitty.dev/install.ps1 | iex";
 const sponsor = "https://github.com/sponsors/stasadance";
 
+const site = "https://vanitty.dev/";
+const title = "Vanitty: fast open-source terminal emulator, a Hyper alternative";
+const description =
+    "Free, open-source terminal emulator for Windows, macOS and Linux. A fast Rust + Tauri rewrite of Hyper without Electron, with tabs, splits, themes and plugins.";
+const ogImage = `${site}og.png`;
+// Lets Google show "Vanitty" as the site name in results.
+const jsonLd = { "@context": "https://schema.org", "@type": "WebSite", name: "Vanitty", url: site };
+
 const features = [
     {
         title: "Native, not Electron",
@@ -42,12 +50,21 @@ const features = [
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Vanitty: a fast, native terminal</title>
-        <meta
-            name="description"
-            content="A fast, native terminal. A Rust + Tauri rewrite of Hyper without Electron."
-        />
+        <title>{title}</title>
+        <meta name="description" content={description} />
+        <link rel="canonical" href={site} />
+        <link rel="sitemap" href={`${base}/sitemap-index.xml`} />
         <link rel="icon" href={`${base}/favicon.svg`} type="image/svg+xml" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Vanitty" />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:url" content={site} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
@@ -81,8 +98,9 @@ const features = [
                     <span class="grad">without the weight.</span>
                 </h1>
                 <p class="lede">
-                    Vanitty is a fast, native terminal. A Rust + Tauri rewrite of Hyper without
-                    Electron. Your Hyper config and themes come with you.
+                    Vanitty is a fast, native, open-source terminal emulator for Windows, macOS and
+                    Linux. A Rust + Tauri rewrite of Hyper without Electron. Your Hyper config and
+                    themes come with you.
                 </p>
                 <div class="install" data-os="unix">
                     <div class="os-tabs" role="tablist">

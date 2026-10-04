@@ -1,6 +1,6 @@
 ---
 title: Keybindings
-description: Change shortcuts with keybindings.json.
+description: "Change Vanitty terminal keyboard shortcuts with a VS Code style keybindings.json."
 ---
 
 `keybindings.json` sits next to `settings.json` and works like VS Code's. Each entry binds a key to a command. Prefix the command with `-` to remove a default.

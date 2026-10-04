@@ -1,6 +1,6 @@
 ---
 title: Themes
-description: Pick a theme, write your own, or use Hyper themes from npm.
+description: "Terminal themes for Vanitty: pick a built-in theme, write your own in JSON, or use Hyper themes from npm."
 ---
 
 Open **Settings > Change Theme…** (or right-click the title bar) to pick one. The list has three parts:
