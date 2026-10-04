@@ -65,6 +65,12 @@ pub async fn update_install<R: Runtime>(app: AppHandle<R>) -> Result<(), String>
         return Err("No update has been downloaded.".into());
     };
     update.install(bytes).map_err(|e| e.to_string())?;
+    if let Some(appimage) = app.env().appimage {
+        let args: Vec<_> = app.env().args_os.into_iter().skip(1).collect();
+        crate::host::relaunch_appimage(&appimage, &args).map_err(|e| e.to_string())?;
+        app.exit(0);
+        return Ok(());
+    }
     app.restart();
 }
 
