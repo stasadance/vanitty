@@ -1,6 +1,6 @@
 ---
 title: Develop
-description: Build Vanitty from source.
+description: "Build the Vanitty terminal from source with Rust, Tauri and pnpm."
 ---
 
 Requires Rust, Node 22+, pnpm, [just](https://github.com/casey/just), and the [Tauri prerequisites](https://tauri.app/start/prerequisites/).

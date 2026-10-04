@@ -1,6 +1,6 @@
 ---
 title: Plugins
-description: Extend Vanitty with sandboxed JavaScript plugins.
+description: "Extend the Vanitty terminal with sandboxed JavaScript and TypeScript plugins."
 ---
 
 Vanitty plugins are JavaScript (or compiled TypeScript) packages. Each one runs in its own Web Worker with no DOM, network, storage or Tauri access, so a broken or malicious plugin can't touch the app or your files. It talks to Vanitty only through the API passed to `activate`.
