@@ -2,7 +2,13 @@ import { invoke } from "@tauri-apps/api/core";
 import { applyEdits, modify, parse, printParseErrorCode, type ParseError } from "jsonc-parser";
 import { applyThemes } from "../themes";
 import { vanittyThemes } from "../themes/vanitty";
-import { DEFAULT_CONFIG, KEYBINDINGS_TEMPLATE, SETTINGS_TEMPLATE, type Config } from "./defaults";
+import {
+    DEFAULT_CONFIG,
+    KEYBINDINGS_TEMPLATE,
+    SETTINGS_TEMPLATE,
+    type Config,
+    type Profile,
+} from "./defaults";
 import { buildKeymap, type Keybinding } from "./keymaps";
 import { keybindingsSchema, SETTINGS_SCHEMA } from "./schema";
 import { importHyperConfig } from "./hyper";
@@ -54,6 +60,30 @@ export interface Loaded {
 
 const read = (name: string) => invoke<string | null>("config_read", { name });
 const write = (name: string, contents: string) => invoke("config_write", { name, contents });
+
+interface DetectedShell {
+    name: string;
+    shell: string;
+    shellArgs: string[];
+}
+
+/** Other shells installed on this machine (Windows only), looked up once. */
+let detected: Promise<DetectedShell[]> | undefined;
+
+/** Adds detected shells as profiles unless one already has that name or shell. */
+async function withDetectedShells(profiles: Profile[]): Promise<Profile[]> {
+    detected ??= invoke<DetectedShell[]>("shells_detect").catch(() => []);
+    const taken = (s: DetectedShell) =>
+        profiles.some(
+            (p) =>
+                p.name.toLowerCase() === s.name.toLowerCase() ||
+                p.config?.shell?.toLowerCase() === s.shell.toLowerCase(),
+        );
+    const extra = (await detected)
+        .filter((s) => !taken(s))
+        .map((s) => ({ name: s.name, config: { shell: s.shell, shellArgs: s.shellArgs } }));
+    return [...profiles, ...extra];
+}
 
 function parseJsonc<T>(name: string, text: string, errors: string[]): T | undefined {
     const problems: ParseError[] = [];
@@ -129,6 +159,8 @@ export async function loadConfig(): Promise<Loaded> {
     } as Config;
     if (!Array.isArray(config.profiles) || !config.profiles.length)
         config.profiles = DEFAULT_CONFIG.profiles;
+    // Before the default check, so defaultProfile can name a detected shell.
+    config.profiles = await withDetectedShells(config.profiles);
     if (!config.profiles.some((p) => p.name === config.defaultProfile))
         config.defaultProfile = config.profiles[0].name;
 

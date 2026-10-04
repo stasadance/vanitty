@@ -172,8 +172,11 @@ pub fn pty_spawn(
     std::thread::spawn(move || {
         let code = child.wait().map(|s| s.exit_code()).unwrap_or(1);
         // Dropping the master closes the pty, which ends the reader on every
-        // platform (ConPTY never sends EOF on its own).
-        ptys.lock().unwrap().remove(&id);
+        // platform (ConPTY never sends EOF on its own). Drop it outside the
+        // lock: before Windows 11 24H2, ClosePseudoConsole waits until the
+        // shell's output is drained, and the UI thread needs this lock.
+        let pty = ptys.lock().unwrap().remove(&id);
+        drop(pty);
         let _ = reader_thread.join();
         let _ = exit.send(Exited {
             code,
@@ -204,14 +207,14 @@ fn pump(mut reader: Box<dyn Read + Send>, output: Channel<InvokeResponseBody>) {
             }
         }
     });
+    // Keep reading after the window is gone: ConPTY can't close until its
+    // output has been drained.
     let mut buf = vec![0u8; 64 * 1024];
     loop {
         match reader.read(&mut buf) {
             Ok(0) | Err(_) => break,
             Ok(n) => {
-                if tx.send(buf[..n].to_vec()).is_err() {
-                    break;
-                }
+                let _ = tx.send(buf[..n].to_vec());
             }
         }
     }

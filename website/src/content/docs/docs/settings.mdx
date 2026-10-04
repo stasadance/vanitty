@@ -23,6 +23,8 @@ Settings live in `~/.config/vanitty` (`%APPDATA%\Vanitty` on Windows, or `$XDG_C
 
 A profile overrides any terminal option, such as the shell or colors. Pick one from the new-tab menu, or set `defaultProfile`.
 
+On Windows, the shells Vanitty finds are listed there too: PowerShell, PowerShell 7, Command Prompt, Git Bash and each WSL distro. Set `defaultProfile` to one of their names to launch it by default.
+
 ```jsonc
 "profiles": [
   { "name": "zsh", "config": { "shell": "/bin/zsh" } },
