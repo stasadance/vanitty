@@ -45,6 +45,17 @@ fn spawn_detached(mut cmd: Command) -> std::io::Result<()> {
     Ok(())
 }
 
+/// Starts a new Vanitty from its AppImage after an update. Tauri's own restart
+/// would pass on this instance's AppImage environment, whose paths point into
+/// this instance's mount, so the new one starts the way the desktop starts it.
+pub fn relaunch_appimage(
+    appimage: &std::ffi::OsStr,
+    args: &[std::ffi::OsString],
+) -> std::io::Result<()> {
+    let mut cmd = host_command(appimage);
+    cmd.args(args).stdin(Stdio::null()).spawn().map(drop)
+}
+
 /// Opens a URL or file with the system default app.
 pub fn open(target: &str) -> Result<(), String> {
     if cfg!(target_os = "linux") && !env_fixes().is_empty() {
@@ -284,23 +295,34 @@ const APPIMAGE_VARS: &[&str] = &["APPDIR", "APPIMAGE", "ARGV0", "OWD", "GTK_THEM
 /// older libraries and fail with symbol lookup errors. Returns the changes
 /// that restore the user's own environment: entries under `appdir` are
 /// dropped from list variables, and variables left empty are removed.
+///
+/// Entries under other mounts of the same AppImage go too: earlier versions
+/// restarted after an update with their own environment, so the new instance
+/// can carry the old one's paths.
 fn appimage_env(
     appdir: &str,
     vars: impl Iterator<Item = (String, String)>,
 ) -> Vec<(String, Option<String>)> {
     let appdir = appdir.trim_end_matches('/');
+    // The runtime mounts at `<tmp>/.mount_`, then up to six characters of the
+    // file name, then six random ones.
+    let mount = appdir
+        .rsplit_once("/.mount_")
+        .filter(|(_, name)| name.len() > 6 && !name.contains('/'))
+        .and_then(|_| appdir.get(..appdir.len() - 6));
+    let bundled = |p: &str| p.starts_with(appdir) || mount.is_some_and(|m| p.starts_with(m));
     let mut changes = Vec::new();
     for (key, value) in vars {
         if APPIMAGE_VARS.contains(&key.as_str()) {
             changes.push((key, None));
             continue;
         }
-        if !value.contains(appdir) {
+        if !value.split(':').any(bundled) {
             continue;
         }
         let kept: Vec<&str> = value
             .split(':')
-            .filter(|p| !p.is_empty() && !p.starts_with(appdir))
+            .filter(|p| !p.is_empty() && !bundled(p))
             .collect();
         changes.push((key, (!kept.is_empty()).then(|| kept.join(":"))));
     }
@@ -506,5 +528,32 @@ mod tests {
         assert_eq!(get("APPDIR"), Some(None));
         assert_eq!(get("GTK_THEME"), Some(None));
         assert_eq!(get("HOME"), None);
+    }
+
+    #[test]
+    fn strips_paths_of_earlier_mounts() {
+        let changes = appimage_env(
+            "/tmp/.mount_VanittNEW123",
+            vars(&[
+                (
+                    "LD_LIBRARY_PATH",
+                    "/tmp/.mount_VanittNEW123/usr/lib/:/tmp/.mount_VanittOLD456/usr/lib/:",
+                ),
+                (
+                    "XDG_DATA_DIRS",
+                    "/tmp/.mount_VanittOLD456/usr/share:/tmp/.mount_OtherA1b2c3/share:/usr/share",
+                ),
+            ]),
+        );
+        assert_eq!(
+            changes,
+            vec![
+                ("LD_LIBRARY_PATH".into(), None),
+                (
+                    "XDG_DATA_DIRS".into(),
+                    Some("/tmp/.mount_OtherA1b2c3/share:/usr/share".into())
+                ),
+            ]
+        );
     }
 }
