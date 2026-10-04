@@ -3,6 +3,7 @@ mod host;
 mod packages;
 mod pty;
 mod session;
+mod shells;
 mod updater;
 mod window;
 
@@ -44,6 +45,7 @@ pub fn run() {
             session::session_save,
             session::session_clear,
             session::session_quitting,
+            shells::shells_detect,
         ])
         .on_page_load(|webview, payload| {
             if payload.event() == PageLoadEvent::Started {
