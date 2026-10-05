@@ -59,6 +59,7 @@ export interface State {
     /** Title bar items added by plugins. */
     headerItems: Record<string, HeaderItem>;
     themePicker: boolean;
+    layoutPicker: "save" | "open" | null;
     /** Config problems currently shown, so each shows once. */
     configErrors: string[];
     /** When a pane was last resized by hand; its output then isn't activity. */
@@ -79,6 +80,7 @@ export const useStore = create<State>()(() => ({
     fullScreen: false,
     headerItems: {},
     themePicker: false,
+    layoutPicker: null,
     configErrors: [],
     resizedAt: 0,
 }));
@@ -94,13 +96,15 @@ export function activeSessionUid(s: State = getState()): string | undefined {
     return s.activeRoot ? s.activeSessions[s.activeRoot] : undefined;
 }
 
-export function notify(text: string, isError = false, action?: Notification["action"]) {
+/** Shows a toast and returns its id. */
+export function notify(text: string, isError = false, action?: Notification["action"]): string {
     const id = uid("n");
     setState((s) => ({
         notifications: [...s.notifications, { id, text, error: isError, action }],
     }));
     // Errors and notifications with an action stay until dismissed.
     if (!isError && !action) setTimeout(() => dismiss(id), 6000);
+    return id;
 }
 
 export function dismiss(id: string) {
