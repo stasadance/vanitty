@@ -29,7 +29,7 @@ Command names are Hyper's. **Settings > Show Default Keybindings** lists them al
 | Paste (`editor:paste`)                       | <kbd>Ctrl+Shift+V</kbd>                                   | <kbd>⌘V</kbd>                                 |
 | Clear (`editor:clearBuffer`)                 | <kbd>Ctrl+Shift+K</kbd>                                   | <kbd>⌘K</kbd>                                 |
 | New window (`window:new`)                    | <kbd>Ctrl+Shift+N</kbd>                                   | <kbd>⌘N</kbd>                                 |
-| Reopen last session (`window:reopenSession`) | <kbd>Ctrl+Shift+O</kbd>                                   | <kbd>⌘⇧T</kbd>                                |
+| Reopen last session (`window:reopenSession`) | <kbd>Ctrl+Shift+Alt+T</kbd>                               | <kbd>⌘⇧T</kbd>                                |
 | Settings (`window:preferences`)              | <kbd>Ctrl+,</kbd>                                         | <kbd>⌘,</kbd>                                 |
 | Zoom in / out / reset                        | <kbd>Ctrl+=</kbd> / <kbd>Ctrl+-</kbd> / <kbd>Ctrl+0</kbd> | <kbd>⌘=</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> |
 | Full screen (`window:toggleFullScreen`)      | <kbd>F11</kbd>                                            | <kbd>⌘⌃F</kbd>                                |
