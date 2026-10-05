@@ -5,8 +5,6 @@
 
 A fast, native terminal built with Rust and Tauri.
 
-**[Website and docs](https://vanitty.dev)**
-
 <p align="center"><img alt="Vanitty with tabs and a split running neofetch, git log and code" src="docs/assets/screenshots/hero.png"></p>
 
 ## Features
