@@ -22,6 +22,8 @@ export interface Colors {
 
 export interface Profile {
     name: string;
+    /** A preset icon name or any Nerd Font glyph; guessed from the shell when unset. */
+    icon?: string;
     config: Partial<TermConfig>;
 }
 

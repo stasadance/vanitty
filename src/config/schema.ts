@@ -1,4 +1,5 @@
 import { DEFAULT_CONFIG } from "./defaults";
+import { PROFILE_ICON_NAMES } from "./profile-icon";
 
 const color = { type: "string", format: "color" };
 const text = (description: string) => ({ type: "string", description });
@@ -118,6 +119,12 @@ export const SETTINGS_SCHEMA = {
                 required: ["name"],
                 properties: {
                     name: { type: "string" },
+                    icon: {
+                        type: "string",
+                        description:
+                            "Icon in the new tab menu: a preset name or any Nerd Font glyph. Guessed from the shell when unset.",
+                        examples: PROFILE_ICON_NAMES,
+                    },
                     config: { type: "object", properties: termProperties },
                 },
             },

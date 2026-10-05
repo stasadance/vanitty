@@ -23,11 +23,14 @@ Settings live in `~/.config/vanitty` (`%APPDATA%\Vanitty` on Windows, or `$XDG_C
 
 A profile overrides any terminal option, such as the shell or colors. Pick one from the new-tab menu, or set `defaultProfile`.
 
+Each profile gets an icon in the new-tab menu, guessed from its name and shell. Set `icon` to pick another: a preset (`terminal`, `bash`, `zsh`, `fish`, `powershell`, `cmd`, `git-bash`, `linux`, `ubuntu`, `debian`, `arch`, `fedora`, `alpine`, `opensuse`) or any Nerd Font glyph.
+
 On Windows, the shells Vanitty finds are listed there too: PowerShell, PowerShell 7, Command Prompt, Git Bash and each WSL distro. Set `defaultProfile` to one of their names to launch it by default.
 
 ```jsonc
 "profiles": [
   { "name": "zsh", "config": { "shell": "/bin/zsh" } },
+  { "name": "Work", "icon": "fish", "config": { "shell": "/usr/bin/fish" } },
   { "name": "PowerShell", "config": { "shell": "pwsh.exe", "backgroundColor": "#012456" } }
 ]
 ```

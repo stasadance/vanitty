@@ -179,8 +179,12 @@ body,
     max-height: 34px;
     display: flex;
     flex-flow: row;
-    flex-grow: 1;
     min-width: 0;
+}
+
+.tabs_filler {
+    flex-grow: 1;
+    border-bottom: 1px solid;
 }
 
 .tabs_listMac {
@@ -212,8 +216,8 @@ body,
     border-left-width: 1px;
     border-left-style: solid;
     list-style-type: none;
-    flex-grow: 1;
-    flex-basis: 0;
+    width: 200px;
+    flex-shrink: 1;
     min-width: 0;
     position: relative;
 }
@@ -320,23 +324,38 @@ body,
 }
 
 .new_tab {
-    background: transparent;
-    color: #fff;
+    display: flex;
     border-left: 1px solid;
     border-bottom: 1px solid;
-    cursor: pointer;
-    font-size: 12px;
     height: 34px;
-    line-height: 34px;
-    padding: 0 16px;
     position: relative;
-    text-align: center;
     user-select: none;
     -webkit-user-select: none;
 }
 
+.new_tab_button {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    color: #fff;
+    opacity: 0.5;
+    cursor: pointer;
+    transition:
+        opacity 0.15s ease,
+        background-color 0.15s ease;
+}
+
+.new_tab_button:hover,
+.new_tab_buttonOpen {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+.new_tab_button:active {
+    opacity: 0.7;
+}
+
 .new_tab svg {
-    vertical-align: middle;
     width: 10px;
     height: 10px;
 }
@@ -347,15 +366,10 @@ body,
     right: 0;
 }
 
-.tabs_hidden:hover {
-    border-color: inherit;
-}
-
 .profile_dropdown {
     border-width: 1px;
     border-style: solid;
     border-bottom-width: 0;
-    border-right-width: 0;
     position: absolute;
     top: 33px;
     right: 0;
@@ -375,6 +389,16 @@ body,
     border-bottom: 1px solid;
     text-align: start;
     text-transform: capitalize;
+}
+
+.profile_dropdown_icon {
+    display: inline-block;
+    width: 14px;
+    margin-right: 10px;
+    font-family: "FiraCode Nerd Font Mono";
+    font-size: 14px;
+    font-weight: normal;
+    text-align: center;
 }
 
 .profile_dropdown_item_default {
