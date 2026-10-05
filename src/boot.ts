@@ -70,6 +70,30 @@ async function trackWindowState() {
     await win.onResized(() => void update());
 }
 
+const BUNDLED_FONT = '"FiraCode Nerd Font Mono"';
+
+/**
+xterm measures cells on open and WebGL caches glyphs drawn on a canvas, so wait
+for the bundled font. WebKit's canvas can still draw Menlo after the font loads,
+which left plain text in Menlo and Nerd Font icons missing on macOS.
+*/
+async function bundledFontReady() {
+    await Promise.all(
+        ["400", "700"].map((w) => orElse(document.fonts.load(`${w} 13px ${BUNDLED_FONT}`), [])),
+    );
+    const context = document.createElement("canvas").getContext("2d");
+    if (!context) return;
+    const height = (fallback: string) => {
+        context.font = `26px ${BUNDLED_FONT}, ${fallback}`;
+        const m = context.measureText("(");
+        return m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+    };
+    // Same size with different fallbacks means the canvas uses the bundled font.
+    for (let index = 0; index < 100 && height("serif") !== height("monospace"); index++) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+}
+
 export const boot = once(async () => {
     window.addEventListener("keydown", onKeyDown, { capture: true });
     window.addEventListener("vanitty:reload-config", () => void reloadConfig());
@@ -97,12 +121,7 @@ export const boot = once(async () => {
         term?.focus();
     });
 
-    // xterm measures cells on open, so load the bundled font first.
-    await Promise.all(
-        ["400", "700"].map((w) =>
-            orElse(document.fonts.load(`${w} 13px "FiraCode Nerd Font Mono"`), []),
-        ),
-    );
+    await bundledFontReady();
     window.addEventListener("vanitty:hamburger", () => void popupHamburger(10, 34));
 
     await trackWindowState();
