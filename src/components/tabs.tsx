@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 
-import { ChevronDown, CloseTab } from "./icons";
+import { ChevronDown, CloseTab, Plus } from "./icons";
 
 import { closeTab, reorderTab, selectTab } from "../actions";
 import { isMac } from "../config/keymaps";
-import { getState, useStore } from "../store";
+import { useStore } from "../store";
 
 interface Properties {
     titles: string[];
@@ -122,6 +122,13 @@ export const Tabs = ({ titles, activeIndex, onNewTab }: Properties) => {
                 </>
             )}
             <NewTabButton tabsVisible={tabs.length > 1} onNewTab={onNewTab} />
+            {tabs.length > 1 && (
+                <div
+                    className="tabs_filler"
+                    style={{ borderColor }}
+                    data-tauri-drag-region={isMac ? true : undefined}
+                />
+            )}
         </nav>
     );
 };
@@ -152,25 +159,30 @@ const NewTabButton = ({
     return (
         <div
             ref={reference}
-            title="New Tab"
             className={`new_tab ${tabsVisible ? "tabs_visible" : "tabs_hidden"}`}
             style={{ borderColor: tabsVisible ? borderColor : undefined }}
-            onClick={() => {
-                if (getState().config.profiles.length > 1) setOpen(!open);
-                else onNewTab();
-            }}
             onDoubleClick={(event) => event.stopPropagation()}
         >
-            <ChevronDown />
+            <div title="New Tab" className="new_tab_button" onClick={() => onNewTab()}>
+                <Plus />
+            </div>
+            {profiles.length > 1 && (
+                <div
+                    title="New Tab with Profile"
+                    className={`new_tab_button ${open ? "new_tab_buttonOpen" : ""}`}
+                    onClick={() => setOpen(!open)}
+                >
+                    <ChevronDown />
+                </div>
+            )}
             {open && (
                 <ul className="profile_dropdown" style={{ borderColor, backgroundColor }}>
                     {profiles.map((p) => (
                         <li
                             key={p.name}
                             style={{ borderBottomColor: borderColor }}
-                            className={`profile_dropdown_item ${p.name === defaultProfile && profiles.length > 1 ? "profile_dropdown_item_default" : ""}`}
-                            onClick={(event) => {
-                                event.stopPropagation();
+                            className={`profile_dropdown_item ${p.name === defaultProfile ? "profile_dropdown_item_default" : ""}`}
+                            onClick={() => {
                                 setOpen(false);
                                 onNewTab(p.name);
                             }}

@@ -37,6 +37,12 @@ export const Close = () => (
     </svg>
 );
 
+export const Plus = () => (
+    <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.3">
+        <path d="M5 0.5v9M0.5 5h9" />
+    </svg>
+);
+
 export const ChevronDown = () => (
     <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.3">
         <path d="M1.5 3.5 5 7l3.5-3.5" />
