@@ -4,6 +4,7 @@ import { ChevronDown, CloseTab, Plus } from "./icons";
 
 import { closeTab, reorderTab, selectTab } from "../actions";
 import { isMac } from "../config/keymaps";
+import { profileIcon } from "../config/profile-icon";
 import { useStore } from "../store";
 
 interface Properties {
@@ -187,6 +188,7 @@ const NewTabButton = ({
                                 onNewTab(p.name);
                             }}
                         >
+                            <span className="profile_dropdown_icon">{profileIcon(p)}</span>
                             {p.name}
                         </li>
                     ))}

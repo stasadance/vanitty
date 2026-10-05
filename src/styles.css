@@ -391,6 +391,16 @@ body,
     text-transform: capitalize;
 }
 
+.profile_dropdown_icon {
+    display: inline-block;
+    width: 14px;
+    margin-right: 10px;
+    font-family: "FiraCode Nerd Font Mono";
+    font-size: 14px;
+    font-weight: normal;
+    text-align: center;
+}
+
 .profile_dropdown_item_default {
     font-weight: bold;
 }
