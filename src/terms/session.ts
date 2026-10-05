@@ -295,10 +295,8 @@ export class TermSession {
                     webgl.dispose();
                     this.webgl = undefined;
                 });
-                webgl.onChangeTextureAtlas(() => this.redrawAtlasAfterRender());
                 this.term.loadAddon(webgl);
                 this.webgl = webgl;
-                this.redrawAtlasAfterRender();
             } catch {
                 this.webgl = undefined;
             }
@@ -306,19 +304,6 @@ export class TermSession {
             this.webgl.dispose();
             this.webgl = undefined;
         }
-    }
-
-    /**
-    The atlas pre-draws ASCII on a canvas outside the page, where WebKit ignores
-    the bundled font and falls back to Menlo; later glyphs (selected, colored)
-    draw in the right font. Redraw once the first frame has put the canvas in
-    the page, so every glyph uses the bundled font.
-    */
-    private redrawAtlasAfterRender() {
-        const once = this.term.onRender(() => {
-            once.dispose();
-            this.term.clearTextureAtlas();
-        });
     }
 
     private applyImages() {
