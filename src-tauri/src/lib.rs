@@ -43,7 +43,7 @@ pub fn run() {
             window::window_new,
             session::session_take,
             session::session_save,
-            session::session_clear,
+            session::session_reopen,
             session::session_quitting,
             shells::shells_detect,
         ])

@@ -99,6 +99,10 @@ export async function newSession(
             },
             onExit: () => removeSession(sessionUid),
             onFocus: () => setActiveSession(sessionUid),
+            onUse: () => {
+                if (!getState().sessions[sessionUid]?.used)
+                    updateSession(sessionUid, { used: true });
+            },
             onSearchResults: (searchResults) => updateSession(sessionUid, { searchResults }),
         },
         (shell, ptyId) => updateSession(sessionUid, { shell, ptyId }),
@@ -115,6 +119,7 @@ export async function newSession(
                 title: "",
                 search: false,
                 hasActivity: false,
+                used: restored !== undefined,
             },
         },
     }));

@@ -107,7 +107,7 @@ export const SETTINGS_SCHEMA = {
         preserveCWD: bool("Open new tabs and splits in the current directory."),
         disableAutoUpdates: bool("Stop downloading updates in the background."),
         restoreSession: bool(
-            "Reopen your windows, tabs, splits, folders and terminal text on launch.",
+            "Reopen your windows, tabs, splits, folders and terminal text on launch. When off, Shell > Reopen Last Session brings them back.",
         ),
         defaultProfile: text("Profile used for new tabs."),
         profiles: {

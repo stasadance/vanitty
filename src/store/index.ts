@@ -15,6 +15,8 @@ export interface Session {
     search: boolean;
     searchResults?: { resultIndex: number; resultCount: number };
     hasActivity: boolean;
+    /** Typed in, or brought back from the last run: worth reopening. */
+    used: boolean;
 }
 
 /** A node in a tab's split tree: either a terminal or a split of children. */

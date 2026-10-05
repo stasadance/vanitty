@@ -1,9 +1,17 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
-import { focusActive, newSession } from "./actions";
+import { closeTab, focusActive, newSession } from "./actions";
 import { delayed, orElse, serial } from "./helpers";
-import { getState, setState, type State, type TermGroup, useStore } from "./store";
+import {
+    getState,
+    notify,
+    sessionsIn,
+    setState,
+    type State,
+    type TermGroup,
+    useStore,
+} from "./store";
 import { terms } from "./terms/registry";
 
 import type { Divider } from "./terms/session";
@@ -26,10 +34,15 @@ const SAVE_DELAY = 3000;
 const saves = serial();
 const saveSoon = delayed(() => void saveNow(), SAVE_DELAY);
 
-const isEnabled = () => getState().config.restoreSession;
+/** One tab, one pane, never typed in: like a blank browser tab, not worth reopening. */
+function isFresh(s: State) {
+    if (s.tabs.length !== 1) return s.tabs.length === 0;
+    const panes = sessionsIn(s.groups, s.tabs[0]);
+    return panes.length === 1 && !s.sessions[panes[0]]?.used;
+}
 
 async function snapshot(s: State): Promise<WindowSnapshot | null> {
-    if (s.tabs.length === 0) return null;
+    if (isFresh(s)) return null;
     const panes: WindowSnapshot["panes"] = {};
     for (const [uid, session] of Object.entries(s.sessions)) {
         const term = terms.get(uid);
@@ -55,7 +68,6 @@ async function snapshot(s: State): Promise<WindowSnapshot | null> {
 export function saveNow(): Promise<void> {
     saveSoon.cancel();
     return saves(async () => {
-        if (!isEnabled()) return;
         const snap = await snapshot(getState());
         await orElse(invoke("session_save", { snapshot: snap }), undefined);
     });
@@ -63,7 +75,7 @@ export function saveNow(): Promise<void> {
 
 /** Something on screen changed; save soon. */
 export function markDirty() {
-    if (isEnabled()) saveSoon.schedule();
+    saveSoon.schedule();
 }
 
 function valid(snap: WindowSnapshot | null): snap is WindowSnapshot {
@@ -77,15 +89,8 @@ function valid(snap: WindowSnapshot | null): snap is WindowSnapshot {
     );
 }
 
-/** Reopens this window's tabs from the last run. False when there's nothing to restore. */
-export async function restoreSession(): Promise<boolean> {
-    if (!isEnabled()) {
-        await orElse(invoke("session_clear"), undefined);
-        return false;
-    }
-    const snap = await orElse(invoke<WindowSnapshot | null>("session_take"), null);
-    if (!valid(snap)) return false;
-
+/** Adds a saved window's tabs to this window. */
+async function open(snap: WindowSnapshot) {
     for (const g of Object.values(snap.groups)) {
         if (!g.sessionUid) continue;
         const pane = snap.panes[g.sessionUid];
@@ -99,17 +104,46 @@ export async function restoreSession(): Promise<boolean> {
         }
         return {
             sessions,
-            groups: snap.groups,
-            tabs: snap.tabs,
+            groups: { ...st.groups, ...snap.groups },
+            tabs: [...st.tabs, ...snap.tabs],
             activeRoot:
                 snap.activeRoot && Object.hasOwn(snap.groups, snap.activeRoot)
                     ? snap.activeRoot
                     : snap.tabs[0],
-            activeSessions: snap.activeSessions,
+            activeSessions: { ...st.activeSessions, ...snap.activeSessions },
         };
     });
     focusActive();
+}
+
+/** Reopens this window's tabs from the last run when `restoreSession` is on. False when there's nothing to restore. */
+export async function restoreSession(): Promise<boolean> {
+    const snap = await orElse(
+        invoke<WindowSnapshot | null>("session_take", {
+            restore: getState().config.restoreSession,
+        }),
+        null,
+    );
+    if (!valid(snap)) return false;
+    await open(snap);
     return true;
+}
+
+/** Brings back the newest past session not reopened yet. A fresh window takes its first window; the rest open as new windows. */
+export async function reopenSession() {
+    const before = getState();
+    const isHere = isFresh(before);
+    const reopened = await orElse(
+        invoke<{ here: WindowSnapshot | null } | null>("session_reopen", { here: isHere }),
+        null,
+    );
+    if (!reopened) {
+        notify("No saved session to reopen.");
+        return;
+    }
+    if (!valid(reopened.here)) return;
+    await open(reopened.here);
+    for (const tab of before.tabs) closeTab(tab);
 }
 
 /** Saves after layout changes, while output flows, and when the window closes. */
