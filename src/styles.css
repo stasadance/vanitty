@@ -466,6 +466,30 @@ body,
     overflow: hidden;
 }
 
+.term_restored {
+    width: 100% !important;
+    pointer-events: none;
+}
+
+.term_restoredLine {
+    display: flex;
+    align-items: center;
+    gap: 1.5ch;
+    height: 100%;
+    white-space: nowrap;
+    opacity: 0.25;
+}
+
+.term_restoredLine::before,
+.term_restoredLine::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: currentColor;
+    /* 15% overall */
+    opacity: 0.6;
+}
+
 /* Split panes */
 
 .splitpane_panes {
