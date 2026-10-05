@@ -185,7 +185,7 @@ export class TermSession {
         this.applyPadding();
         this.fit.fit();
         if (this.restored) {
-            term.write(this.restored + "\r\n");
+            term.write(this.restored + "\r\n\r\n", () => this.markRestored());
             this.restored = undefined;
         }
 
@@ -209,6 +209,20 @@ export class TermSession {
         this.element.addEventListener("mouseup", (event) => this.onMouseUp(event));
 
         void this.start(this.spawn);
+    }
+
+    /** A hairline on the blank row between last run's output and the new shell. */
+    private markRestored() {
+        const marker = this.term.registerMarker(-1);
+        const divider = this.term.registerDecoration({
+            marker,
+            width: this.term.cols,
+            layer: "top",
+        });
+        divider?.onRender((element) => {
+            element.className = "xterm-decoration xterm-decoration-top-layer term_restored";
+            element.style.color = this.config.foregroundColor;
+        });
     }
 
     private async start(options: Omit<SpawnOptions, "cols" | "rows">, isFallback = false) {
