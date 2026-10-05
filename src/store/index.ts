@@ -54,6 +54,8 @@ export interface State {
     fontSizeOverride: number | null;
     maximized: boolean;
     fullScreen: boolean;
+    /** The corner radius macOS clips the window to; null elsewhere. */
+    systemRadius: number | null;
     /** Title bar items added by plugins. */
     headerItems: Record<string, HeaderItem>;
     themePicker: boolean;
@@ -75,6 +77,7 @@ export const useStore = create<State>()(() => ({
     fontSizeOverride: null,
     maximized: false,
     fullScreen: false,
+    systemRadius: null,
     headerItems: {},
     themePicker: false,
     configErrors: [],

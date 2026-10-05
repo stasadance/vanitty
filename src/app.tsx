@@ -14,6 +14,7 @@ export const App = () => {
     const config = useStore((s) => s.config);
     const isMaximized = useStore((s) => s.maximized);
     const isFullScreen = useStore((s) => s.fullScreen);
+    const systemRadius = useStore((s) => s.systemRadius);
     const activeRoot = useStore((s) => s.activeRoot);
     const tabs = useStore((s) => s.tabs);
     const isThemePicker = useStore((s) => s.themePicker);
@@ -28,7 +29,9 @@ export const App = () => {
         if (title) void getCurrentWindow().setTitle(title);
     }, [title]);
 
-    const isRounded = !isMaximized && !isFullScreen && config.borderRadius > 0;
+    // macOS clips the window to its own radius, so the border follows that.
+    const radius = systemRadius ?? config.borderRadius * uiScale;
+    const isRounded = !isMaximized && !isFullScreen && radius > 0;
 
     return (
         <div id="hyper">
@@ -40,7 +43,7 @@ export const App = () => {
                         borderColor: config.borderColor,
                         backgroundColor: config.backgroundColor,
                         borderWidth: isMaximized || isFullScreen ? 0 : 1,
-                        "--vanitty-radius": `${config.borderRadius * uiScale}px`,
+                        "--vanitty-radius": `${radius}px`,
                         "--ui-scale": uiScale,
                     } as React.CSSProperties
                 }

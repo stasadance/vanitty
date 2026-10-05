@@ -61,3 +61,29 @@ pub fn state_plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
 pub fn window_new(app: AppHandle) -> Result<(), String> {
     create(&app).map(|_| ()).map_err(|e| e.to_string())
 }
+
+/// The corner radius macOS clips this window to, so the webview's border can
+/// follow it. It changes between macOS versions and AppKit has no public
+/// getter, so this asks the window's private `_cornerRadius`.
+#[tauri::command]
+pub fn window_corner_radius(window: WebviewWindow) -> Option<f64> {
+    #[cfg(target_os = "macos")]
+    {
+        use objc2::runtime::AnyObject;
+        use objc2::{msg_send, sel};
+
+        let ns_window = window.ns_window().ok()?.cast::<AnyObject>();
+        // SAFETY: Tauri hands back the live NSWindow of this window, and we
+        // only send `_cornerRadius` when the window answers to it.
+        unsafe {
+            let ns_window = ns_window.as_ref()?;
+            let responds: bool = msg_send![ns_window, respondsToSelector: sel!(_cornerRadius)];
+            responds.then(|| msg_send![ns_window, _cornerRadius])
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = window;
+        None
+    }
+}

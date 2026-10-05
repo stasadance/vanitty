@@ -41,6 +41,7 @@ pub fn run() {
             updater::update_check,
             updater::update_install,
             window::window_new,
+            window::window_corner_radius,
             session::session_take,
             session::session_save,
             session::session_clear,

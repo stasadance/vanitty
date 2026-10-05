@@ -4651,6 +4651,7 @@ dependencies = [
  "libproc",
  "nodejs-semver",
  "notify",
+ "objc2",
  "open",
  "portable-pty",
  "serde",

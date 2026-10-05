@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -68,6 +69,8 @@ async function trackWindowState() {
     };
     await update();
     await win.onResized(() => void update());
+    const systemRadius = await orElse(invoke<number | null>("window_corner_radius"), null);
+    setState({ systemRadius });
 }
 
 export const boot = once(async () => {
