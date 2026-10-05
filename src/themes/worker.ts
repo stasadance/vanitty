@@ -3,8 +3,7 @@ import { lockdown, makeRequire } from "../sandbox/require";
 
 lockdown();
 
-// Evaluates Hyper theme packages. Runs in a worker so theme code has no
-// access to the DOM, the Tauri IPC bridge or the network.
+// Runs Hyper themes away from the DOM, Tauri IPC and the network.
 
 interface Request {
     sources: Record<string, string>;
@@ -15,19 +14,21 @@ interface Request {
     module?: string;
 }
 
-self.onmessage = (e: MessageEvent<Request>) => {
-    const { sources, themes, config, platform } = e.data;
-    if (e.data.module !== undefined) {
+self.addEventListener("message", (event: MessageEvent<Request>) => {
+    const { sources, themes, config, platform } = event.data;
+    if (event.data.module !== undefined) {
         try {
             const exports = makeRequire(
-                { "__root__/config.js": e.data.module },
+                { "__root__/config.js": event.data.module },
                 platform,
             )("./config.js");
+            // JSON drops the functions a config may hold; structuredClone would throw.
+            // eslint-disable-next-line unicorn/prefer-structured-clone
             self.postMessage({ config: JSON.parse(JSON.stringify(exports ?? {})), errors: [] });
-        } catch (err) {
+        } catch (error) {
             self.postMessage({
                 config: {},
-                errors: [err instanceof Error ? err.message : String(err)],
+                errors: [error instanceof Error ? error.message : String(error)],
             });
         }
         return;
@@ -37,8 +38,8 @@ self.onmessage = (e: MessageEvent<Request>) => {
     const requireTheme = makeRequire(sources, platform);
     for (const name of themes) {
         try {
-            const mod = requireTheme(name);
-            const decorate = mod?.decorateConfig ?? mod?.default?.decorateConfig;
+            const loaded = requireTheme(name);
+            const decorate = loaded?.decorateConfig ?? loaded?.default?.decorateConfig;
             if (typeof decorate !== "function") {
                 errors.push(
                     `${name} has no decorateConfig, so it is not a theme Vanitty can load.`,
@@ -46,10 +47,11 @@ self.onmessage = (e: MessageEvent<Request>) => {
                 continue;
             }
             const next = decorate(structuredClone(result));
+            // eslint-disable-next-line unicorn/prefer-structured-clone
             if (next && typeof next === "object") result = JSON.parse(JSON.stringify(next));
-        } catch (err) {
-            errors.push(`${name}: ${err instanceof Error ? err.message : String(err)}`);
+        } catch (error) {
+            errors.push(`${name}: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
     self.postMessage({ config: result, errors });
-};
+});

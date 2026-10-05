@@ -1,22 +1,20 @@
-import { defineConfig } from "vite";
-import react, { reactCompilerPreset } from "@vitejs/plugin-react";
-import babel from "@rolldown/plugin-babel";
-// @ts-expect-error type error without @types/node package
 import process from "node:process";
+
+import babel from "@rolldown/plugin-babel";
+import react, { reactCompilerPreset } from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+
+// @ts-expect-error type error without @types/node package
 const host = process.env.TAURI_DEV_HOST;
 
-// https://vite.dev/config/
 export default defineConfig(() => ({
     plugins: [react(), babel({ presets: [reactCompilerPreset()] })],
 
-    // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
-    //
-    // 1. prevent Vite from obscuring rust errors
+    // Keep Rust errors visible.
     clearScreen: false,
-    // xterm.js and its addons are one big chunk, loaded from disk anyway.
-    // Built inside src-tauri so the crate ships the UI it embeds.
+    // In src-tauri so the crate embeds it. xterm is one big chunk, loaded from disk.
     build: { outDir: "src-tauri/dist", emptyOutDir: true, chunkSizeWarningLimit: 1500 },
-    // 2. tauri expects a fixed port, fail if that port is not available
+    // Tauri expects this exact port.
     server: {
         port: 1420,
         strictPort: true,
@@ -29,7 +27,6 @@ export default defineConfig(() => ({
               }
             : undefined,
         watch: {
-            // 3. tell Vite to ignore watching `src-tauri`
             ignored: ["**/src-tauri/**"],
         },
     },

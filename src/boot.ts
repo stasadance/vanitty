@@ -1,54 +1,63 @@
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+
 import { activeTerm, applyConfigToTerms, newTab } from "./actions";
-import { terms } from "./terms/registry";
-import { emit, syncPlugins } from "./plugins/host";
 import { COMMAND_IDS, commandAllowedInInput, inInput, runCommand } from "./commands";
 import { eventKey, platform } from "./config/keymaps";
 import { ensureConfigFiles, loadConfig } from "./config/load";
+import { once, orElse, serial } from "./helpers";
 import { installAppMenu, popupHamburger } from "./menu";
 import { restoreSession, trackSession } from "./persist";
+import { emit, syncPlugins } from "./plugins/host";
 import { activeSessionUid, getState, notify, setState, useStore } from "./store";
+import { terms } from "./terms/registry";
 import { startUpdateChecks } from "./updates";
 
-let configErrors: string[] = [];
+const reloads = serial();
 
-async function reloadConfig() {
-    const { config, keymap, errors } = await loadConfig();
-    setState({ config, keymap });
-    applyConfigToTerms();
-    // Show each config problem once, and drop the ones that got fixed.
-    setState((s) => ({
-        notifications: s.notifications.filter(
-            (n) => !configErrors.includes(n.text) || errors.includes(n.text),
-        ),
-    }));
-    for (const e of errors) if (!configErrors.includes(e)) notify(e, true);
-    configErrors = errors;
-    await installAppMenu().catch(() => {});
-    await syncPlugins({
-        runCommand,
-        writeToTerminal: (text, id) => (id ? terms.get(id) : activeTerm())?.write(text),
-    }).catch((e) => notify(`Couldn't load plugins: ${e}`, true));
-}
+/** Reloads settings, keybindings and plugins, one reload at a time. */
+const reloadConfig = () =>
+    reloads(async () => {
+        const { config, keymap, errors } = await loadConfig();
+        const shown = getState().configErrors;
+        // Show each config problem once, and drop the ones that got fixed.
+        setState((s) => ({
+            config,
+            keymap,
+            configErrors: errors,
+            notifications: s.notifications.filter(
+                (n) => !shown.includes(n.text) || errors.includes(n.text),
+            ),
+        }));
+        applyConfigToTerms();
+        for (const error of errors) if (!shown.includes(error)) notify(error, true);
+        await orElse(installAppMenu(), undefined);
+        try {
+            await syncPlugins({
+                runCommand,
+                writeToTerminal: (text, id) => (id ? terms.get(id) : activeTerm())?.write(text),
+            });
+        } catch (error) {
+            notify(`Couldn't load plugins: ${error}`, true);
+        }
+    });
 
-function onKeyDown(e: KeyboardEvent) {
-    if (e.isComposing) return;
-    const key = eventKey(e);
+function onKeyDown(event: KeyboardEvent) {
+    if (event.isComposing) return;
+    const key = eventKey(event);
     if (!key) return;
     const command = getState().keymap.get(key);
     if (!command) return;
     if (inInput() && !commandAllowedInInput(command)) return;
-    if (runCommand(command)) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
+    if (!runCommand(command)) return;
+    event.preventDefault();
+    event.stopPropagation();
 }
 
 function quotePath(p: string) {
     if (platform === "windows") return /\s/.test(p) ? `"${p}"` : p;
-    return /^[\w@%+=:,./-]+$/.test(p) ? p : `'${p.replace(/'/g, `'\\''`)}'`;
+    return /^[\w@%+=:,./-]+$/.test(p) ? p : `'${p.replaceAll("'", String.raw`'\''`)}'`;
 }
 
 async function trackWindowState() {
@@ -61,18 +70,16 @@ async function trackWindowState() {
     await win.onResized(() => void update());
 }
 
-let booted = false;
-
-export async function boot() {
-    if (booted) return;
-    booted = true;
-
-    window.addEventListener("keydown", onKeyDown, true);
+export const boot = once(async () => {
+    window.addEventListener("keydown", onKeyDown, { capture: true });
     window.addEventListener("vanitty:reload-config", () => void reloadConfig());
 
-    const notes = await ensureConfigFiles(COMMAND_IDS).catch((e) => [
-        `Couldn't set up config files: ${e}`,
-    ]);
+    let notes: string[];
+    try {
+        notes = await ensureConfigFiles(COMMAND_IDS);
+    } catch (error) {
+        notes = [`Couldn't set up config files: ${error}`];
+    }
     await reloadConfig();
     for (const n of notes) notify(n);
     startUpdateChecks();
@@ -83,28 +90,26 @@ export async function boot() {
         timer = setTimeout(() => void reloadConfig(), 100);
     });
 
-    await getCurrentWebview().onDragDropEvent((e) => {
-        if (e.payload.type === "drop" && e.payload.paths.length) {
-            const term = activeTerm();
-            term?.write(e.payload.paths.map(quotePath).join(" "));
-            term?.focus();
-        }
+    await getCurrentWebview().onDragDropEvent((event) => {
+        if (event.payload.type !== "drop" || event.payload.paths.length === 0) return;
+        const term = activeTerm();
+        term?.write(event.payload.paths.map((path) => quotePath(path)).join(" "));
+        term?.focus();
     });
 
-    // xterm measures the font when a terminal opens, so the bundled font must
-    // be ready first or cells come out the fallback font's size.
+    // xterm measures cells on open, so load the bundled font first.
     await Promise.all(
         ["400", "700"].map((w) =>
-            document.fonts.load(`${w} 13px "FiraCode Nerd Font Mono"`).catch(() => []),
+            orElse(document.fonts.load(`${w} 13px "FiraCode Nerd Font Mono"`), []),
         ),
     );
     window.addEventListener("vanitty:hamburger", () => void popupHamburger(10, 34));
 
     await trackWindowState();
-    useStore.subscribe((s, prev) => {
+    useStore.subscribe((s, previous) => {
         const active = activeSessionUid(s);
-        if (active && active !== activeSessionUid(prev)) emit("terminal.active", active);
+        if (active && active !== activeSessionUid(previous)) emit("terminal.active", active);
     });
     if (!(await restoreSession())) await newTab();
     await trackSession();
-}
+});

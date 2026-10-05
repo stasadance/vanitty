@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+
 import { platform } from "../config/keymaps";
 
 export interface ThemeResult<T> {
@@ -15,17 +16,17 @@ const TIMEOUT_MS = 5000;
 
 /** Package name without a version, matching the folder it installs to. */
 export function themeName(spec: string): string {
-    const s = spec.trim().split("#")[0];
+    const s = spec.trim().split("#", 1)[0];
     const at = s.indexOf("@", s.startsWith("@") ? 1 : 0);
     return at > 0 ? s.slice(0, at) : s;
 }
 
-export async function installThemes(specs: string[], force = false): Promise<string[]> {
-    if (!specs.length) return [];
+export async function installThemes(specs: string[], shouldForce = false): Promise<string[]> {
+    if (specs.length === 0) return [];
     const results = await invoke<InstallResult[]>("packages_install", {
         kind: "themes",
         specs,
-        force,
+        force: shouldForce,
     });
     return results
         .filter((r) => r.error)
@@ -37,10 +38,14 @@ export async function applyThemes<T extends object>(
     specs: string[],
     config: T,
 ): Promise<ThemeResult<T>> {
-    if (!specs.length) return { config, errors: [] };
+    if (specs.length === 0) return { config, errors: [] };
     const errors = await installThemes(specs);
     const sources = await invoke<Record<string, string>>("packages_sources", { kind: "themes" });
-    return runWorker({ sources, themes: specs.map(themeName), config }, config, errors);
+    return runWorker(
+        { sources, themes: specs.map((spec) => themeName(spec)), config },
+        config,
+        errors,
+    );
 }
 
 /** Evaluates a CommonJS module (a legacy .hyper.js) in the sandbox. */
@@ -60,19 +65,19 @@ async function runWorker<T>(
                 () => reject(new Error("Themes took too long to load.")),
                 TIMEOUT_MS,
             );
-            worker.onmessage = (e) => {
+            worker.addEventListener("message", (event) => {
                 clearTimeout(timer);
-                resolve(e.data);
-            };
-            worker.onerror = (e) => {
+                resolve(event.data);
+            });
+            worker.addEventListener("error", (event) => {
                 clearTimeout(timer);
-                reject(new Error(e.message));
-            };
+                reject(new Error(event.message));
+            });
             worker.postMessage({ ...message, platform });
         });
         return { config: result.config, errors: [...errors, ...result.errors] };
-    } catch (err) {
-        return { config, errors: [...errors, String(err)] };
+    } catch (error) {
+        return { config, errors: [...errors, String(error)] };
     } finally {
         worker.terminate();
     }
@@ -88,7 +93,7 @@ export async function classifyPlugins(
     const other: string[] = [];
     for (const spec of specs) {
         const r = await runWorker({ sources, themes: [themeName(spec)], config: {} }, {}, []);
-        if (r.errors.length) other.push(spec);
+        if (r.errors.length > 0) other.push(spec);
         else themes.push(spec);
     }
     return { themes, other, errors };

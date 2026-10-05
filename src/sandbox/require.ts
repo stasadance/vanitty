@@ -25,11 +25,13 @@ export function lockdown() {
     }
 }
 
+// A CommonJS module can export anything.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Module = { exports: any };
 
 function dirname(p: string) {
-    const i = p.lastIndexOf("/");
-    return i < 0 ? "" : p.slice(0, i);
+    const index = p.lastIndexOf("/");
+    return index === -1 ? "" : p.slice(0, index);
 }
 
 function join(...parts: string[]) {
@@ -58,24 +60,24 @@ export function makeRequire(sources: Record<string, string>, platform: string) {
     };
 
     const tryFile = (p: string) =>
-        [p, `${p}.js`, `${p}.json`, `${p}.cjs`, `${p}/index.js`, `${p}/index.json`].find(
-            (c) => c in sources,
+        [p, `${p}.js`, `${p}.json`, `${p}.cjs`, `${p}/index.js`, `${p}/index.json`].find((c) =>
+            Object.hasOwn(sources, c),
         );
 
-    const resolvePackage = (dir: string): string | undefined => {
-        const pkg = sources[`${dir}/package.json`];
-        if (pkg) {
+    const resolvePackage = (directory: string): string | undefined => {
+        const packageJson = sources[`${directory}/package.json`];
+        if (packageJson) {
             try {
-                const main = JSON.parse(pkg).main;
+                const main = JSON.parse(packageJson).main;
                 if (main) {
-                    const found = tryFile(join(dir, main));
+                    const found = tryFile(join(directory, main));
                     if (found) return found;
                 }
             } catch {
                 // Broken package.json, fall through to index.js.
             }
         }
-        return tryFile(dir);
+        return tryFile(directory);
     };
 
     const resolve = (spec: string, from: string): string => {
@@ -85,29 +87,30 @@ export function makeRequire(sources: Record<string, string>, platform: string) {
             found = tryFile(p) ?? resolvePackage(p);
         } else {
             const parts = spec.split("/");
-            const pkgName = spec.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
-            const rest = spec.slice(pkgName.length);
+            const packageName = spec.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
+            const rest = spec.slice(packageName.length);
             // Nested node_modules first, then the flat top level.
-            let dir = dirname(from);
-            while (dir && !found) {
-                const base = join(dir, "node_modules", pkgName);
+            let directory = dirname(from);
+            while (directory && !found) {
+                const base = join(directory, "node_modules", packageName);
                 found = rest ? tryFile(base + rest) : resolvePackage(base);
-                dir = dirname(dir);
+                directory = dirname(directory);
             }
-            found ??= rest ? tryFile(pkgName + rest) : resolvePackage(pkgName);
+            found ??= rest ? tryFile(packageName + rest) : resolvePackage(packageName);
         }
         if (!found) throw new Error(`Cannot find module '${spec}' from '${from}'`);
         return found;
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const load = (path: string): any => {
         const cached = cache.get(path);
         if (cached) return cached.exports;
         const module: Module = { exports: {} };
         cache.set(path, module);
-        const src = sources[path];
+        const source = sources[path];
         if (path.endsWith(".json")) {
-            module.exports = JSON.parse(src);
+            module.exports = JSON.parse(source);
             return module.exports;
         }
         const process = {
@@ -116,16 +119,16 @@ export function makeRequire(sources: Record<string, string>, platform: string) {
             versions: {},
             cwd: () => "/",
         };
-        const fn = new Function(
+        const wrapper = new Function(
             "module",
             "exports",
             "require",
             "__filename",
             "__dirname",
             "process",
-            src,
+            source,
         );
-        fn(
+        wrapper(
             module,
             module.exports,
             (spec: string) => requireFrom(spec, path),
@@ -138,13 +141,13 @@ export function makeRequire(sources: Record<string, string>, platform: string) {
 
     const requireFrom = (spec: string, from: string) => {
         const bare = spec.replace(/^node:/, "");
-        if (bare in builtins) return builtins[bare];
-        return load(resolve(spec, from));
+        return Object.hasOwn(builtins, bare) ? builtins[bare] : load(resolve(spec, from));
     };
 
     return (name: string) => load(resolve(name, "__root__/x.js"));
 }
 
 export function platformToNode(p: string) {
-    return p === "macos" ? "darwin" : p === "windows" ? "win32" : p;
+    if (p === "macos") return "darwin";
+    return p === "windows" ? "win32" : p;
 }

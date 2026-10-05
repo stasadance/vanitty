@@ -1,6 +1,8 @@
 import { create } from "zustand";
-import { DEFAULT_CONFIG, type Config } from "../config/defaults";
+
+import { type Config, DEFAULT_CONFIG } from "../config/defaults";
 import { buildKeymap } from "../config/keymaps";
+import { counter } from "../helpers";
 
 export type Direction = "horizontal" | "vertical";
 
@@ -55,6 +57,10 @@ export interface State {
     /** Title bar items added by plugins. */
     headerItems: Record<string, HeaderItem>;
     themePicker: boolean;
+    /** Config problems currently shown, so each shows once. */
+    configErrors: string[];
+    /** When a pane was last resized by hand; its output then isn't activity. */
+    resizedAt: number;
 }
 
 export const useStore = create<State>()(() => ({
@@ -71,24 +77,28 @@ export const useStore = create<State>()(() => ({
     fullScreen: false,
     headerItems: {},
     themePicker: false,
+    configErrors: [],
+    resizedAt: 0,
 }));
 
 export const getState = useStore.getState;
 export const setState = useStore.setState;
 
-let nextId = 0;
+const nextId = counter();
 export const uid = (prefix: string) =>
-    `${prefix}${Date.now().toString(36)}${(nextId++).toString(36)}`;
+    `${prefix}${Date.now().toString(36)}${nextId().toString(36)}`;
 
 export function activeSessionUid(s: State = getState()): string | undefined {
     return s.activeRoot ? s.activeSessions[s.activeRoot] : undefined;
 }
 
-export function notify(text: string, error = false, action?: Notification["action"]) {
+export function notify(text: string, isError = false, action?: Notification["action"]) {
     const id = uid("n");
-    setState((s) => ({ notifications: [...s.notifications, { id, text, error, action }] }));
-    // Notifications with an action stay until dismissed.
-    if (!error && !action) setTimeout(() => dismiss(id), 6000);
+    setState((s) => ({
+        notifications: [...s.notifications, { id, text, error: isError, action }],
+    }));
+    // Errors and notifications with an action stay until dismissed.
+    if (!isError && !action) setTimeout(() => dismiss(id), 6000);
 }
 
 export function dismiss(id: string) {
@@ -109,6 +119,5 @@ export function groupOfSession(groups: Record<string, TermGroup>, sessionUid: st
 export function sessionsIn(groups: Record<string, TermGroup>, uid: string): string[] {
     const g = groups[uid];
     if (!g) return [];
-    if (g.sessionUid) return [g.sessionUid];
-    return g.children.flatMap((c) => sessionsIn(groups, c));
+    return g.sessionUid ? [g.sessionUid] : g.children.flatMap((c) => sessionsIn(groups, c));
 }

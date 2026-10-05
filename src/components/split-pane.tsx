@@ -1,7 +1,8 @@
-import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, type ReactNode, useEffect, useRef, useState } from "react";
+
 import type { Direction } from "../store";
 
-interface Props {
+interface Properties {
     direction: Direction;
     sizes: number[] | null;
     borderColor: string;
@@ -9,24 +10,30 @@ interface Props {
     children: ReactNode[];
 }
 
-export function SplitPane({ direction, sizes: given, borderColor, onResize, children }: Props) {
+export const SplitPane = ({
+    direction,
+    sizes: given,
+    borderColor,
+    onResize,
+    children,
+}: Properties) => {
     const [dragging, setDragging] = useState(false);
     const cleanup = useRef<() => void>(undefined);
-    const horizontal = direction === "horizontal";
-    const sizes = given ?? new Array<number>(children.length).fill(1 / children.length);
+    const isHorizontal = direction === "horizontal";
+    const sizes = given ?? Array.from({ length: children.length }, () => 1 / children.length);
 
     useEffect(() => () => cleanup.current?.(), []);
 
-    const startDrag = (e: React.MouseEvent<HTMLDivElement>, index: number) => {
-        e.preventDefault();
-        const divider = e.currentTarget;
+    const startDrag = (event: React.MouseEvent<HTMLDivElement>, index: number) => {
+        event.preventDefault();
+        const divider = event.currentTarget;
         const total =
-            divider.parentElement!.getBoundingClientRect()[horizontal ? "height" : "width"];
-        let last = horizontal ? e.clientY : e.clientX;
+            divider.parentElement!.getBoundingClientRect()[isHorizontal ? "height" : "width"];
+        let last = isHorizontal ? event.clientY : event.clientX;
         let current = [...sizes];
         setDragging(true);
-        const move = (ev: MouseEvent) => {
-            const pos = horizontal ? ev.clientY : ev.clientX;
+        const move = (moveEvent: MouseEvent) => {
+            const pos = isHorizontal ? moveEvent.clientY : moveEvent.clientX;
             const d = (pos - last) / total;
             const next = [...current];
             next[index] += d;
@@ -48,8 +55,8 @@ export function SplitPane({ direction, sizes: given, borderColor, onResize, chil
     };
 
     /** Double-click a divider to split its two panes evenly. */
-    const even = (e: React.MouseEvent, index: number) => {
-        e.preventDefault();
+    const even = (event: React.MouseEvent, index: number) => {
+        event.preventDefault();
         const next = [...sizes];
         const pair = next[index] + next[index + 1];
         next[index] = pair / 2;
@@ -57,25 +64,25 @@ export function SplitPane({ direction, sizes: given, borderColor, onResize, chil
         onResize(next);
     };
 
-    const prop = horizontal ? "height" : "width";
+    const property = isHorizontal ? "height" : "width";
     return (
         <div className={`splitpane_panes splitpane_panes_${direction}`}>
-            {children.map((child, i) => (
-                <Fragment key={i}>
+            {children.map((child, index) => (
+                <Fragment key={index}>
                     <div
                         className="splitpane_pane"
                         style={{
-                            [prop]: `${sizes[i] * 100}%`,
-                            flexBasis: `${sizes[i] * 100}%`,
+                            [property]: `${sizes[index] * 100}%`,
+                            flexBasis: `${sizes[index] * 100}%`,
                             flexGrow: 0,
                         }}
                     >
                         {child}
                     </div>
-                    {i < children.length - 1 && (
+                    {index < children.length - 1 && (
                         <div
-                            onMouseDown={(e) => startDrag(e, i)}
-                            onDoubleClick={(e) => even(e, i)}
+                            onMouseDown={(event) => startDrag(event, index)}
+                            onDoubleClick={(event) => even(event, index)}
                             style={{ backgroundColor: borderColor }}
                             className={`splitpane_divider splitpane_divider_${direction}`}
                         />
@@ -85,10 +92,10 @@ export function SplitPane({ direction, sizes: given, borderColor, onResize, chil
             <div
                 style={{
                     display: dragging ? "block" : "none",
-                    cursor: horizontal ? "row-resize" : "col-resize",
+                    cursor: isHorizontal ? "row-resize" : "col-resize",
                 }}
                 className="splitpane_shim"
             />
         </div>
     );
-}
+};

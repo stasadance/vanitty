@@ -1,7 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import { parse } from "jsonc-parser";
-import { classifyPlugins, evalModule } from "../themes";
+
 import { fromHyperKeymaps } from "./keymaps";
+
+import { classifyPlugins, evalModule } from "../themes";
 
 interface HyperConfigFile {
     path: string;
@@ -43,20 +45,20 @@ export async function importHyperConfig(): Promise<Imported | null> {
         hyper = parse(file.contents, [], { allowTrailingComma: true }) ?? {};
     } else {
         const result = await evalModule(file.contents);
-        if (result.errors.length) throw new Error(result.errors[0]);
+        if (result.errors.length > 0) throw new Error(result.errors[0]);
         hyper = result.config as HyperConfig;
     }
 
     const notes: string[] = [];
-    const config: Record<string, unknown> = { ...(hyper.config ?? {}) };
+    const config: Record<string, unknown> = { ...hyper.config };
     for (const key of DROPPED) delete config[key];
 
     const plugins = (hyper.plugins ?? []).filter((p) => typeof p === "string");
-    if (plugins.length) {
+    if (plugins.length > 0) {
         const { themes, other, errors } = await classifyPlugins(plugins);
         notes.push(...errors);
         config.themes = themes;
-        if (other.length) {
+        if (other.length > 0) {
             notes.push(
                 `Skipped Hyper plugins that aren't themes: ${other.join(", ")}. Hyper plugins don't run in Vanitty; many of them are built in.`,
             );

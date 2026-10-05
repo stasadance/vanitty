@@ -1,23 +1,23 @@
 import { DEFAULT_CONFIG } from "./defaults";
 
 const color = { type: "string", format: "color" };
-const str = (description: string) => ({ type: "string", description });
-const num = (description: string) => ({ type: "number", description });
+const text = (description: string) => ({ type: "string", description });
+const numeric = (description: string) => ({ type: "number", description });
 const bool = (description: string) => ({ type: "boolean", description });
 
 const colorNames = Object.keys(DEFAULT_CONFIG.colors);
 
 const termProperties = {
-    fontSize: num("Font size in pixels."),
-    fontFamily: str("Font family, with fallbacks."),
-    uiFontFamily: str("Font family for tabs and other UI."),
+    fontSize: numeric("Font size in pixels."),
+    fontFamily: text("Font family, with fallbacks."),
+    uiFontFamily: text("Font family for tabs and other UI."),
     fontWeight: {
         type: ["string", "number"],
         description: "Font weight: normal, bold, or 100-900.",
     },
     fontWeightBold: { type: ["string", "number"], description: "Font weight for bold text." },
-    lineHeight: num("Line height as a multiple of the font size."),
-    letterSpacing: num("Extra space between letters, in pixels."),
+    lineHeight: numeric("Line height as a multiple of the font size."),
+    letterSpacing: numeric("Extra space between letters, in pixels."),
     scrollback: {
         type: "integer",
         minimum: 0,
@@ -34,14 +34,14 @@ const termProperties = {
     },
     selectionColor: { ...color, description: "Selection color." },
     borderColor: { ...color, description: "Window border and divider color." },
-    padding: str('CSS padding around the terminal, e.g. "12px 14px".'),
+    padding: text('CSS padding around the terminal, e.g. "12px 14px".'),
     colors: {
         type: "object",
         description: "The 16 ANSI colors.",
         properties: Object.fromEntries(colorNames.map((n) => [n, color])),
         additionalProperties: color,
     },
-    shell: str("Shell to run. Empty uses $SHELL (or COMSPEC on Windows)."),
+    shell: text("Shell to run. Empty uses $SHELL (or COMSPEC on Windows)."),
     shellArgs: {
         type: "array",
         items: { type: "string" },
@@ -52,7 +52,7 @@ const termProperties = {
         additionalProperties: { type: "string" },
         description: "Extra environment variables.",
     },
-    workingDirectory: str("Directory new sessions start in. Empty uses your home directory."),
+    workingDirectory: text("Directory new sessions start in. Empty uses your home directory."),
     bell: {
         enum: ["SOUND", false],
         description: '"SOUND" plays a sound on the terminal bell, false disables it.',
@@ -82,7 +82,7 @@ const termProperties = {
 };
 
 export const SETTINGS_SCHEMA = {
-    $schema: "http://json-schema.org/draft-07/schema#",
+    $schema: "https://json-schema.org/draft-07/schema#",
     title: "Vanitty settings",
     type: "object",
     allowComments: true,
@@ -90,8 +90,8 @@ export const SETTINGS_SCHEMA = {
     properties: {
         $schema: { type: "string" },
         ...termProperties,
-        css: str("Extra CSS for the window. Uses Hyper's class names, so Hyper snippets work."),
-        termCSS: str("Extra CSS for the terminals."),
+        css: text("Extra CSS for the window. Uses Hyper's class names, so Hyper snippets work."),
+        termCSS: text("Extra CSS for the terminals."),
         showHamburgerMenu: {
             enum: ["", true, false],
             description: "Show the menu button (Linux and Windows). Empty uses the default.",
@@ -100,7 +100,7 @@ export const SETTINGS_SCHEMA = {
             enum: ["", true, false, "left"],
             description: "Show window controls (Linux and Windows), optionally on the left.",
         },
-        borderRadius: num(
+        borderRadius: numeric(
             "Window corner radius in pixels (Linux and Windows; macOS uses the system corners).",
         ),
         preserveCWD: bool("Open new tabs and splits in the current directory."),
@@ -108,7 +108,7 @@ export const SETTINGS_SCHEMA = {
         restoreSession: bool(
             "Reopen your windows, tabs, splits, folders and terminal text on launch.",
         ),
-        defaultProfile: str("Profile used for new tabs."),
+        defaultProfile: text("Profile used for new tabs."),
         profiles: {
             type: "array",
             description:
@@ -133,7 +133,7 @@ export const SETTINGS_SCHEMA = {
             items: { type: "string" },
             description: "Plugin folders inside the plugins/local folder of your config directory.",
         },
-        colorTheme: str(
+        colorTheme: text(
             'A Vanitty theme: a built-in one like "catppuccin-mocha", or the name of a JSON file in the themes folder. Pick one with Change Theme….',
         ),
         themes: {
@@ -147,7 +147,7 @@ export const SETTINGS_SCHEMA = {
 
 export function keybindingsSchema(commands: string[]) {
     return {
-        $schema: "http://json-schema.org/draft-07/schema#",
+        $schema: "https://json-schema.org/draft-07/schema#",
         title: "Vanitty keybindings",
         type: "array",
         allowComments: true,

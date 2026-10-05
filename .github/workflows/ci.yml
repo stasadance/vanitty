@@ -1,6 +1,6 @@
 name: CI
 
-# Typechecks and builds the frontend, then lints and tests the Rust side on
+# Lints, typechecks and builds the frontend, then lints and tests the Rust side on
 # Linux, Windows and macOS for every pull request and push to main.
 on:
     pull_request:
@@ -43,6 +43,8 @@ jobs:
             - run: pnpm install --frozen-lockfile
             # Line endings differ on Windows checkouts, so check formatting once.
             - run: pnpm format:check
+              if: runner.os == 'Linux'
+            - run: pnpm lint
               if: runner.os == 'Linux'
             # Runs tsc, and gives Tauri the dist/ folder it embeds at compile time.
             - run: pnpm build

@@ -1,46 +1,47 @@
 #!/usr/bin/env node
-// Bumps the version to YY.MM.PATCH (PATCH resets each month) on a
-// release/vX branch off origin/main, pushes it and opens a PR. Merging that PR
-// runs the Release workflow, which tags the merge and publishes the release.
-//
-//   pnpm release
+// `pnpm release`: opens a PR bumping to the next YY.MM.PATCH (PATCH resets
+// monthly). Merging it runs the Release workflow, which tags and publishes.
 
 import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 
-const run = (cmd) => execSync(cmd, { stdio: "inherit" });
-const read = (p) => readFileSync(p, "utf8");
+const run = (command) => execSync(command, { stdio: "inherit" });
 
 if (execSync("git status --porcelain").toString().trim()) {
     console.error("Commit or stash your changes first.");
     process.exit(1);
 }
 
+const read = (p) => readFileSync(p, "utf8");
+
 run("git fetch origin main");
 run("git switch --detach origin/main");
 
-const pkg = JSON.parse(read("package.json"));
+const manifest = JSON.parse(read("package.json"));
 const now = new Date();
 const yy = now.getUTCFullYear() % 100;
 const mm = now.getUTCMonth() + 1;
-const [curYY, curMM, curPatch] = pkg.version.split(".").map(Number);
-const patch = curYY === yy && curMM === mm ? curPatch + 1 : 0;
+const [currentYear, currentMonth, currentPatch] = manifest.version.split(".").map(Number);
+const patch = currentYear === yy && currentMonth === mm ? currentPatch + 1 : 0;
 const version = `${yy}.${mm}.${patch}`;
 
-pkg.version = version;
-writeFileSync("package.json", JSON.stringify(pkg, null, 4) + "\n");
+manifest.version = version;
+writeFileSync("package.json", JSON.stringify(manifest, null, 4) + "\n");
 
-const conf = JSON.parse(read("src-tauri/tauri.conf.json"));
-conf.version = version;
-writeFileSync("src-tauri/tauri.conf.json", JSON.stringify(conf, null, 4) + "\n");
+const config = JSON.parse(read("src-tauri/tauri.conf.json"));
+config.version = version;
+writeFileSync("src-tauri/tauri.conf.json", JSON.stringify(config, null, 4) + "\n");
 
 writeFileSync(
     "src-tauri/Cargo.toml",
-    read("src-tauri/Cargo.toml").replace(/^version = ".*"$/m, `version = "${version}"`),
+    read("src-tauri/Cargo.toml").replace(/^version = ".*"$/m, () => `version = "${version}"`),
 );
 writeFileSync(
     "src-tauri/Cargo.lock",
-    read("src-tauri/Cargo.lock").replace(/(name = "vanitty"\nversion = )".*"/, `$1"${version}"`),
+    read("src-tauri/Cargo.lock").replace(
+        /(name = "vanitty"\nversion = )".*"/,
+        (_, prefix) => `${prefix}"${version}"`,
+    ),
 );
 
 const branch = `release/v${version}`;

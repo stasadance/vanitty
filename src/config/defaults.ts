@@ -105,11 +105,7 @@ export const DEFAULT_COLORS: Colors = {
     lightCoral: "#F08080",
 };
 
-/**
- * Hyper's stock theme and defaults, so an imported Hyper config looks the
- * same here. Vanitty differs in font (bundled FiraCode Nerd Font Mono with
- * ligatures, 13px), blinking cursor, no bell, quick edit and WebGL.
- */
+/** Hyper's stock look, plus our font, blinking cursor, no bell, quick edit and WebGL. */
 export const DEFAULT_CONFIG: Config = {
     fontSize: 13,
     fontFamily:
@@ -164,14 +160,14 @@ export const DEFAULT_CONFIG: Config = {
 };
 
 /** What a fresh settings.json looks like. */
-export const SETTINGS_TEMPLATE = `{
+export const SETTINGS_TEMPLATE = String.raw`{
   "$schema": "./settings.schema.json",
   // Every option is listed with its description in settings.schema.json, so
   // editors like VS Code autocomplete and validate this file.
   // Changes apply as soon as you save.
 
   "fontSize": 13,
-  "fontFamily": "\\"FiraCode Nerd Font Mono\\", Menlo, \\"DejaVu Sans Mono\\", Consolas, monospace",
+  "fontFamily": "\"FiraCode Nerd Font Mono\", Menlo, \"DejaVu Sans Mono\", Consolas, monospace",
   "cursorShape": "BLOCK",
   "padding": "12px 14px",
 

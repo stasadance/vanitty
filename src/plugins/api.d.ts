@@ -1,9 +1,9 @@
 /**
- * The API a Vanitty plugin receives in `activate(vanitty)`.
- *
- * Plugins run in a sandboxed Web Worker: no DOM, no network, no direct access
- * to the app. Everything goes through this object.
- */
+The API a Vanitty plugin receives in `activate(vanitty)`.
+
+Plugins run in a sandboxed Web Worker: no DOM, no network, no direct access
+to the app. Everything goes through this object.
+*/
 export interface Disposable {
     dispose(): void;
 }
@@ -30,12 +30,12 @@ export interface VanittyAPI {
 
     commands: {
         /**
-         * Adds a command that keybindings and other plugins can run. Ids without
-         * a namespace are prefixed with the plugin name, e.g. "my-plugin:hello".
-         */
-        register(id: string, handler: (arg?: string) => unknown): Disposable;
+        Adds a command that keybindings and other plugins can run. Ids without
+        a namespace are prefixed with the plugin name, e.g. "my-plugin:hello".
+        */
+        register(id: string, handler: (argument?: string) => unknown): Disposable;
         /** Runs any command, e.g. "tab:new" or "pane:splitRight". */
-        execute(id: string, arg?: string): Promise<void>;
+        execute(id: string, argument?: string): Promise<void>;
     };
 
     terminals: {
@@ -43,20 +43,20 @@ export interface VanittyAPI {
         active(): Promise<TerminalInfo | undefined>;
         /** Sends text to a terminal's shell, as if typed. Defaults to the active one. */
         write(text: string, id?: string): Promise<void>;
-        onDidOpen(cb: (t: TerminalInfo) => void): Disposable;
-        onDidClose(cb: (id: string) => void): Disposable;
-        onDidChangeActive(cb: (id: string) => void): Disposable;
-        onDidChangeTitle(cb: (e: { id: string; title: string }) => void): Disposable;
+        onDidOpen(callback: (t: TerminalInfo) => void): Disposable;
+        onDidClose(callback: (id: string) => void): Disposable;
+        onDidChangeActive(callback: (id: string) => void): Disposable;
+        onDidChangeTitle(callback: (event: { id: string; title: string }) => void): Disposable;
         /** Output from the shell. */
-        onData(cb: (e: { id: string; data: string }) => void): Disposable;
+        onData(callback: (event: { id: string; data: string }) => void): Disposable;
         /** Keys the user typed. */
-        onInput(cb: (e: { id: string; data: string }) => void): Disposable;
+        onInput(callback: (event: { id: string; data: string }) => void): Disposable;
     };
 
     config: {
         /** The resolved settings, themes applied. */
         get(): Promise<Record<string, unknown>>;
-        onDidChange(cb: (config: Record<string, unknown>) => void): Disposable;
+        onDidChange(callback: (config: Record<string, unknown>) => void): Disposable;
     };
 
     window: {

@@ -23,12 +23,10 @@ export interface Exited {
 export function spawnPty(
     options: SpawnOptions,
     onData: (data: Uint8Array) => void,
-    onExit: (e: Exited) => void,
+    onExit: (exited: Exited) => void,
 ): Promise<Spawned> {
-    const output = new Channel<ArrayBuffer>();
-    output.onmessage = (buf) => onData(new Uint8Array(buf));
-    const exit = new Channel<Exited>();
-    exit.onmessage = onExit;
+    const output = new Channel<ArrayBuffer>((buffer) => onData(new Uint8Array(buffer)));
+    const exit = new Channel<Exited>(onExit);
     return invoke<Spawned>("pty_spawn", { options, output, exit });
 }
 

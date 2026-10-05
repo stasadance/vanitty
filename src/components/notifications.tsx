@@ -1,8 +1,8 @@
 import { dismiss, useStore } from "../store";
 
-export function Notifications() {
+export const Notifications = () => {
     const notifications = useStore((s) => s.notifications);
-    if (!notifications.length) return null;
+    if (notifications.length === 0) return null;
     return (
         <div className="notifications_view">
             {notifications.map((n) => (
@@ -23,4 +23,4 @@ export function Notifications() {
             ))}
         </div>
     );
-}
+};
