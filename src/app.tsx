@@ -7,7 +7,7 @@ import { Header, useTabTitles } from "./components/header";
 import { Notifications } from "./components/notifications";
 import { Terms } from "./components/terms";
 import { ThemePicker } from "./components/theme-picker";
-import { isMac, uiScale } from "./config/keymaps";
+import { uiScale } from "./config/keymaps";
 import { useStore } from "./store";
 
 export const App = () => {
@@ -28,7 +28,7 @@ export const App = () => {
         if (title) void getCurrentWindow().setTitle(title);
     }, [title]);
 
-    const isRounded = !isMac && !isMaximized && !isFullScreen && config.borderRadius > 0;
+    const isRounded = !isMaximized && !isFullScreen && config.borderRadius > 0;
 
     return (
         <div id="hyper">

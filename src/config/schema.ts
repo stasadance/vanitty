@@ -101,9 +101,7 @@ export const SETTINGS_SCHEMA = {
             enum: ["", true, false, "left"],
             description: "Show window controls (Linux and Windows), optionally on the left.",
         },
-        borderRadius: numeric(
-            "Window corner radius in pixels (Linux and Windows; macOS uses the system corners).",
-        ),
+        borderRadius: numeric("Window corner radius in pixels."),
         preserveCWD: bool("Open new tabs and splits in the current directory."),
         disableAutoUpdates: bool("Stop downloading updates in the background."),
         restoreSession: bool(
