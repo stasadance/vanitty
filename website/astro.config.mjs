@@ -9,7 +9,7 @@ export default defineConfig({
         starlight({
             title: "Vanitty",
             description:
-                "Free, open-source terminal emulator for Windows, macOS and Linux. A fast Rust + Tauri rewrite of Hyper without Electron.",
+                "Free, open-source terminal emulator for Windows, macOS and Linux. Fast and native, built with Rust and Tauri.",
             logo: {
                 dark: "./src/assets/logo-dark.svg",
                 light: "./src/assets/logo-light.svg",

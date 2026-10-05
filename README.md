@@ -3,7 +3,7 @@
   <img alt="Vanitty" src="docs/assets/logo-dark.svg#gh-dark-mode-only" width="360">
 </p>
 
-A fast, native terminal. A Rust + Tauri rewrite of [Hyper](https://github.com/vercel/hyper) without Electron.
+A fast, native terminal built with Rust and Tauri.
 
 **[Website and docs](https://vanitty.dev)**
 
@@ -128,3 +128,7 @@ FiraCode Nerd Font Mono is © The Fira Code Project Authors and Nerd Fonts, unde
 ## Support
 
 Vanitty is free and open source. If it's part of your day, [sponsoring on GitHub](https://github.com/sponsors/stasadance) helps fund fixes, new features and releases.
+
+## Credits
+
+Vanitty started as a port of [Hyper](https://github.com/vercel/hyper).
