@@ -18,6 +18,7 @@ import { KEYBINDINGS_TEMPLATE, SETTINGS_TEMPLATE } from "./config/defaults";
 import { importHyperConfig } from "./config/hyper";
 import { defaultKeybindings } from "./config/keymaps";
 import { orElse } from "./helpers";
+import { reopenSession } from "./persist";
 import { hasPluginCommand, runPluginCommand } from "./plugins/host";
 import { activeSessionUid, getState, notify, setState } from "./store";
 
@@ -68,6 +69,7 @@ export const COMMANDS: Record<string, Command> = {
     },
     "window:themes": () => setState({ themePicker: true }),
     "window:hamburgerMenu": () => window.dispatchEvent(new CustomEvent("vanitty:hamburger")),
+    "window:reopenSession": () => reopenSession(),
     "app:quit": async () => {
         // Keep every window for the next launch, not just the last one closed.
         await orElse(invoke("session_quitting"), undefined);

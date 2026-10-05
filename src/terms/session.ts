@@ -106,6 +106,8 @@ export interface SessionEvents {
     onTitle(title: string): void;
     onData(data: Uint8Array): void;
     onInput(data: string): void;
+    /** The user typed or pasted, not the terminal answering a query. */
+    onUse(): void;
     onExit(): void;
     onFocus(): void;
     onSearchResults(results: { resultIndex: number; resultCount: number } | undefined): void;
@@ -192,6 +194,7 @@ export class TermSession {
         this.disposables.push(
             term.onTitleChange((t) => this.events.onTitle(t)),
             term.onBell(() => void this.bell?.play().catch(() => {})),
+            term.onKey(() => this.events.onUse()),
             term.onData((data) => {
                 this.write(data);
                 this.events.onInput(data);
@@ -365,6 +368,7 @@ export class TermSession {
     }
 
     paste(text: string) {
+        this.events.onUse();
         this.term.paste(text);
     }
 

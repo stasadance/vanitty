@@ -152,7 +152,7 @@ export const DEFAULT_CONFIG: Config = {
     modifierKeys: { altIsMeta: false, cmdIsMeta: false },
     preserveCWD: true,
     disableAutoUpdates: false,
-    restoreSession: true,
+    restoreSession: false,
     defaultProfile: "default",
     profiles: [{ name: "default", config: {} }],
     colorTheme: "",

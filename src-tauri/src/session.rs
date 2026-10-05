@@ -1,6 +1,10 @@
-//! The open tabs of every window, kept on disk so the next launch reopens
+//! The open tabs of every window, kept on disk so the next launch can reopen
 //! them. Each window's webview builds its own snapshot; this module holds the
 //! latest one per window and writes them all to `session.json`.
+//!
+//! Windows not worth keeping (one untouched tab) send no snapshot. The last
+//! run's session stays on disk as `previous` until it's reopened, so opening
+//! and closing such a window doesn't lose it.
 
 use std::collections::{BTreeMap, VecDeque};
 use std::path::PathBuf;
@@ -18,16 +22,20 @@ const FILE: &str = "session.json";
 #[derive(Default, Serialize, Deserialize)]
 struct SessionFile {
     windows: Vec<Value>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    previous: Vec<Value>,
 }
 
 #[derive(Default)]
 struct Inner {
     /// Latest snapshot of each open window, keyed by creation order.
     windows: BTreeMap<u32, Value>,
-    /// Saved windows from the last run that haven't been handed out yet.
+    /// Saved windows from the last run that haven't been reopened yet.
     pending: VecDeque<Value>,
+    /// Windows opened to reopen saved ones that haven't taken theirs yet.
+    opening: usize,
     /// Whether the first window has asked for its snapshot yet.
-    restoring_started: bool,
+    started: bool,
     /// Set while quitting, so closing every window doesn't forget them.
     quitting: bool,
 }
@@ -54,8 +62,13 @@ impl SessionStore {
             .ok()
             .and_then(|b| serde_json::from_slice(&b).ok())
             .unwrap_or_default();
+        let pending = if saved.windows.is_empty() {
+            saved.previous
+        } else {
+            saved.windows
+        };
         Self(Mutex::new(Inner {
-            pending: saved.windows.into(),
+            pending: pending.into(),
             ..Default::default()
         }))
     }
@@ -63,6 +76,7 @@ impl SessionStore {
     fn write(inner: &Inner) {
         let file = SessionFile {
             windows: inner.windows.values().cloned().collect(),
+            previous: inner.pending.iter().cloned().collect(),
         };
         let path = path();
         if let Some(dir) = path.parent() {
@@ -91,34 +105,48 @@ impl SessionStore {
     }
 }
 
-/// This window's snapshot from the last run, if any. The first window to ask
-/// also reopens the rest of the saved windows.
-#[tauri::command]
-pub fn session_take(app: AppHandle, store: State<'_, SessionStore>) -> Option<Value> {
+/// Gives this window the first saved window and opens a window for each of
+/// the rest.
+fn reopen(app: &AppHandle, store: &SessionStore) -> Option<Value> {
     let (mine, others) = {
         let mut inner = store.0.lock().unwrap();
         let mine = inner.pending.pop_front();
-        let others = if inner.restoring_started {
-            0
-        } else {
-            inner.restoring_started = true;
-            inner.pending.len()
-        };
-        (mine, others)
+        inner.opening = inner.pending.len();
+        (mine, inner.opening)
     };
     for _ in 0..others {
-        let _ = window::create(&app);
+        let _ = window::create(app);
     }
     mine
 }
 
-/// Restoring is turned off: drop what was saved.
+/// This window's snapshot from the last run, if any. Windows opened by a
+/// reopen always get theirs; otherwise only the first window does, when
+/// `restore` is on, and it reopens the rest too.
 #[tauri::command]
-pub fn session_clear(store: State<'_, SessionStore>) {
-    let mut inner = store.0.lock().unwrap();
-    inner.pending.clear();
-    inner.windows.clear();
-    let _ = std::fs::remove_file(path());
+pub fn session_take(
+    app: AppHandle,
+    store: State<'_, SessionStore>,
+    restore: bool,
+) -> Option<Value> {
+    {
+        let mut inner = store.0.lock().unwrap();
+        if inner.opening > 0 {
+            inner.opening -= 1;
+            return inner.pending.pop_front();
+        }
+        let first = !std::mem::replace(&mut inner.started, true);
+        if !(restore && first) {
+            return None;
+        }
+    }
+    reopen(&app, &store)
+}
+
+/// Reopens the last run's windows: this window gets the first.
+#[tauri::command]
+pub fn session_reopen(app: AppHandle, store: State<'_, SessionStore>) -> Option<Value> {
+    reopen(&app, &store)
 }
 
 /// Stores this window's snapshot, or forgets the window when it's `null`.
