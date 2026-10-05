@@ -14,7 +14,6 @@ export const App = () => {
     const config = useStore((s) => s.config);
     const isMaximized = useStore((s) => s.maximized);
     const isFullScreen = useStore((s) => s.fullScreen);
-    const systemRadius = useStore((s) => s.systemRadius);
     const activeRoot = useStore((s) => s.activeRoot);
     const tabs = useStore((s) => s.tabs);
     const isThemePicker = useStore((s) => s.themePicker);
@@ -29,11 +28,7 @@ export const App = () => {
         if (title) void getCurrentWindow().setTitle(title);
     }, [title]);
 
-    // macOS clips the window to its own radius, so the border follows that.
-    const radius = systemRadius ?? config.borderRadius * uiScale;
-    // A zoomed macOS window keeps its rounded frame; elsewhere maximized is edge to edge.
-    const isEdgeless = isFullScreen || (isMaximized && !isMac);
-    const isRounded = !isEdgeless && radius > 0;
+    const isRounded = !isMac && !isMaximized && !isFullScreen && config.borderRadius > 0;
 
     return (
         <div id="hyper">
@@ -44,8 +39,9 @@ export const App = () => {
                         fontFamily: config.uiFontFamily,
                         borderColor: config.borderColor,
                         backgroundColor: config.backgroundColor,
-                        borderWidth: isEdgeless ? 0 : 1,
-                        "--vanitty-radius": `${radius}px`,
+                        // macOS draws its own window outline.
+                        borderWidth: isMac || isMaximized || isFullScreen ? 0 : 1,
+                        "--vanitty-radius": `${config.borderRadius * uiScale}px`,
                         "--ui-scale": uiScale,
                     } as React.CSSProperties
                 }

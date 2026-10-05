@@ -28,7 +28,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["devtools", "macos-private-api"] }
+tauri = { version = "2", features = ["devtools"] }
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-window-state = "2"
 portable-pty = "0.9"
@@ -45,7 +45,6 @@ tauri-plugin-updater = "2"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 libproc = "0.14"
-objc2 = "0.6"
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]

@@ -5,10 +5,9 @@ use tauri_plugin_window_state::{StateFlags, WindowExt};
 
 static NEXT: AtomicU32 = AtomicU32::new(0);
 
-/// The window is transparent so the webview draws the rounded border in the
-/// theme's color. On macOS that also drops the system's outline, while the
-/// shadow follows our rounded shape and the traffic lights sit over our tab
-/// bar. Elsewhere the window is frameless and the webview draws the controls.
+/// macOS keeps its native, already rounded frame with the traffic lights laid
+/// over our tab bar. Elsewhere the window is frameless and transparent so the
+/// webview draws the rounded border and the window controls itself.
 pub fn create(app: &AppHandle) -> tauri::Result<WebviewWindow> {
     let first = app.webview_windows().is_empty();
     let label = format!("main-{}", NEXT.fetch_add(1, Ordering::Relaxed));
@@ -21,8 +20,7 @@ pub fn create(app: &AppHandle) -> tauri::Result<WebviewWindow> {
     #[cfg(target_os = "macos")]
     let builder = builder
         .title_bar_style(tauri::TitleBarStyle::Overlay)
-        .hidden_title(true)
-        .transparent(true);
+        .hidden_title(true);
 
     #[cfg(not(target_os = "macos"))]
     let builder = builder.decorations(false).transparent(true);
@@ -59,30 +57,4 @@ pub fn state_plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
 #[tauri::command]
 pub fn window_new(app: AppHandle) -> Result<(), String> {
     create(&app).map(|_| ()).map_err(|e| e.to_string())
-}
-
-/// The corner radius macOS clips this window to, so the webview's border can
-/// follow it. It changes between macOS versions and AppKit has no public
-/// getter, so this asks the window's private `_cornerRadius`.
-#[tauri::command]
-pub fn window_corner_radius(window: WebviewWindow) -> Option<f64> {
-    #[cfg(target_os = "macos")]
-    {
-        use objc2::runtime::AnyObject;
-        use objc2::{msg_send, sel};
-
-        let ns_window = window.ns_window().ok()?.cast::<AnyObject>();
-        // SAFETY: Tauri hands back the live NSWindow of this window, and we
-        // only send `_cornerRadius` when the window answers to it.
-        unsafe {
-            let ns_window = ns_window.as_ref()?;
-            let responds: bool = msg_send![ns_window, respondsToSelector: sel!(_cornerRadius)];
-            responds.then(|| msg_send![ns_window, _cornerRadius])
-        }
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        let _ = window;
-        None
-    }
 }
