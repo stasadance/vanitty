@@ -6,9 +6,9 @@ use tauri_plugin_window_state::{StateFlags, WindowExt};
 static NEXT: AtomicU32 = AtomicU32::new(0);
 
 /// The window is transparent so the webview draws the rounded border in the
-/// theme's color. macOS keeps its traffic lights laid over our tab bar but
-/// drops the system shadow, which brings its own outline we can't recolor.
-/// Elsewhere the window is frameless and the webview draws the controls too.
+/// theme's color. On macOS that also drops the system's outline, while the
+/// shadow follows our rounded shape and the traffic lights sit over our tab
+/// bar. Elsewhere the window is frameless and the webview draws the controls.
 pub fn create(app: &AppHandle) -> tauri::Result<WebviewWindow> {
     let first = app.webview_windows().is_empty();
     let label = format!("main-{}", NEXT.fetch_add(1, Ordering::Relaxed));
@@ -22,8 +22,7 @@ pub fn create(app: &AppHandle) -> tauri::Result<WebviewWindow> {
     let builder = builder
         .title_bar_style(tauri::TitleBarStyle::Overlay)
         .hidden_title(true)
-        .transparent(true)
-        .shadow(false);
+        .transparent(true);
 
     #[cfg(not(target_os = "macos"))]
     let builder = builder.decorations(false).transparent(true);
