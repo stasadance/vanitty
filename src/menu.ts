@@ -45,14 +45,10 @@ function accelerator(key: string | undefined) {
     return parts.join("+");
 }
 
-/**
- * On macOS the app menu owns its shortcuts, so items carry accelerators.
- * Elsewhere menus are popups and shortcuts are handled in the webview, so
- * they're left off to avoid running a command twice.
- */
-async function item(text: string, command: string, withAccel = isMac) {
+/** Accelerators only on macOS, where the app menu owns shortcuts; elsewhere they'd run twice. */
+async function item(text: string, command: string, hasAccelerator = isMac) {
     const options: MenuItemOptions = { text, action: () => void runCommand(command) };
-    if (withAccel) {
+    if (hasAccelerator) {
         const accel = accelerator(keyFor(getState().keymap, command));
         if (accel) options.accelerator = accel;
     }
@@ -158,11 +154,7 @@ export async function installAppMenu() {
     await menu.setAsAppMenu();
 }
 
-/**
- * Window position for a point in page (CSS) pixels. Without one the menu asks
- * the system for the pointer, which Wayland doesn't tell. CSS pixels aren't
- * window pixels on a scaled display, so go through devicePixelRatio.
- */
+/** Window position for a CSS pixel point. Wayland won't report the pointer, so menus need one. */
 function at(x: number, y: number) {
     return new PhysicalPosition(Math.round(x * devicePixelRatio), Math.round(y * devicePixelRatio));
 }

@@ -80,23 +80,12 @@ export default [
             "unicorn/no-array-sort": "off",
             // React refs and the xterm/DOM APIs use null.
             "unicorn/no-null": "off",
-            // These two turn every /** doc */ comment into a bare block.
-            "unicorn/no-asterisk-prefix-in-documentation-comments": "off",
-            "unicorn/single-line-block-comment-style": "off",
-            // Module-level state (timers, caches, ids) is deliberate.
-            "unicorn/no-top-level-assignment-in-function": "off",
-            // `.catch()` on a promise we don't wait for is fire-and-forget,
-            // not a missing await.
-            "unicorn/prefer-await": "off",
-            // Flags settings keys and plugin API names we can't rename, and
-            // functions that return booleans.
-            "unicorn/consistent-boolean-name": "off",
-            // Misfires on reading typed Record values like `flags[key]`.
-            "unicorn/no-computed-property-existence-check": "off",
-            // Reordering class members is churn with no payoff.
-            "unicorn/consistent-class-member-order": "off",
+            // Doc comments stay terse: one line when they fit, no `*` gutter.
+            "unicorn/single-line-block-comment-style": ["error", "single-line"],
+            // Function names say what they do (`runCommand`), not what they return.
+            "unicorn/consistent-boolean-name": ["error", { checkFunctions: "never" }],
             // Vite only bundles workers written as new URL("./worker.ts", ...).
-            "unicorn/relative-url-style": "off",
+            "unicorn/relative-url-style": ["error", "always"],
             "react/function-component-definition": [
                 "error",
                 {
@@ -105,6 +94,16 @@ export default [
                 },
             ],
             "import-x/no-default-export": "error",
+        },
+    },
+    // Type info stops unicorn misreading value reads and non-promise thenables.
+    {
+        files: ["src/**/*.{ts,tsx}"],
+        languageOptions: {
+            parserOptions: {
+                projectService: true,
+                tsconfigRootDir: import.meta.dirname,
+            },
         },
     },
     {

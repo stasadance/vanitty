@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { focusActive, newSession } from "./actions";
+import { delayed, orElse, serial } from "./helpers";
 import { getState, setState, type State, type TermGroup, useStore } from "./store";
 import { terms } from "./terms/registry";
 
@@ -17,10 +18,10 @@ interface WindowSnapshot {
 
 const SAVE_DELAY = 3000;
 
-let timer: ReturnType<typeof setTimeout> | undefined;
-let saving: Promise<void> = Promise.resolve();
+const saves = serial();
+const saveSoon = delayed(() => void saveNow(), SAVE_DELAY);
 
-const enabled = () => getState().config.restoreSession;
+const isEnabled = () => getState().config.restoreSession;
 
 async function snapshot(s: State): Promise<WindowSnapshot | null> {
     if (s.tabs.length === 0) return null;
@@ -47,20 +48,17 @@ async function snapshot(s: State): Promise<WindowSnapshot | null> {
 
 /** Saves this window now. Saves run one at a time so an older one can't land last. */
 export function saveNow(): Promise<void> {
-    clearTimeout(timer);
-    timer = undefined;
-    saving = saving.then(async () => {
-        if (!enabled()) return;
+    saveSoon.cancel();
+    return saves(async () => {
+        if (!isEnabled()) return;
         const snap = await snapshot(getState());
-        await invoke("session_save", { snapshot: snap }).catch(() => {});
+        await orElse(invoke("session_save", { snapshot: snap }), undefined);
     });
-    return saving;
 }
 
 /** Something on screen changed; save soon. */
 export function markDirty() {
-    if (timer || !enabled()) return;
-    timer = setTimeout(() => void saveNow(), SAVE_DELAY);
+    if (isEnabled()) saveSoon.schedule();
 }
 
 function valid(snap: WindowSnapshot | null): snap is WindowSnapshot {
@@ -74,16 +72,13 @@ function valid(snap: WindowSnapshot | null): snap is WindowSnapshot {
     );
 }
 
-/**
- * Reopens this window's tabs from the last run. Returns false when there's
- * nothing to restore, so the caller opens a fresh tab instead.
- */
+/** Reopens this window's tabs from the last run. False when there's nothing to restore. */
 export async function restoreSession(): Promise<boolean> {
-    if (!enabled()) {
-        await invoke("session_clear").catch(() => {});
+    if (!isEnabled()) {
+        await orElse(invoke("session_clear"), undefined);
         return false;
     }
-    const snap = await invoke<WindowSnapshot | null>("session_take").catch(() => null);
+    const snap = await orElse(invoke<WindowSnapshot | null>("session_take"), null);
     if (!valid(snap)) return false;
 
     for (const g of Object.values(snap.groups)) {
@@ -94,14 +89,17 @@ export async function restoreSession(): Promise<boolean> {
     setState((st) => {
         const sessions = { ...st.sessions };
         for (const [uid, pane] of Object.entries(snap.panes)) {
-            if (sessions[uid]) sessions[uid] = { ...sessions[uid], title: pane.title };
+            if (Object.hasOwn(sessions, uid))
+                sessions[uid] = { ...sessions[uid], title: pane.title };
         }
         return {
             sessions,
             groups: snap.groups,
             tabs: snap.tabs,
             activeRoot:
-                snap.activeRoot && snap.groups[snap.activeRoot] ? snap.activeRoot : snap.tabs[0],
+                snap.activeRoot && Object.hasOwn(snap.groups, snap.activeRoot)
+                    ? snap.activeRoot
+                    : snap.tabs[0],
             activeSessions: snap.activeSessions,
         };
     });

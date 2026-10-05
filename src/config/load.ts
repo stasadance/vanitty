@@ -12,6 +12,7 @@ import { importHyperConfig } from "./hyper";
 import { buildKeymap, type Keybinding } from "./keymaps";
 import { keybindingsSchema, SETTINGS_SCHEMA } from "./schema";
 
+import { cached, orElse } from "../helpers";
 import { applyThemes } from "../themes";
 import { vanittyThemes } from "../themes/vanitty";
 
@@ -27,11 +28,7 @@ const THEME_COLOR_KEYS = [
 ];
 export const KEYBINDINGS = "keybindings.json";
 
-/**
- * The only settings a theme may change: how Vanitty looks. Theme code comes
- * from npm, so it must not set the shell, its arguments, environment or
- * folder, plugins or anything else that runs or loads something.
- */
+/** Looks-only settings a theme may change. Theme code is from npm: nothing that runs or loads. */
 const THEME_KEYS = new Set([
     ...THEME_COLOR_KEYS,
     "colors",
@@ -70,20 +67,19 @@ interface DetectedShell {
 }
 
 /** Other shells installed on this machine (Windows only), looked up once. */
-let detected: Promise<DetectedShell[]> | undefined;
+const detectShells = cached(() => orElse(invoke<DetectedShell[]>("shells_detect"), []));
 
 /** Adds detected shells as profiles unless one already has that name or shell. */
 async function withDetectedShells(profiles: Profile[]): Promise<Profile[]> {
-    detected ??= invoke<DetectedShell[]>("shells_detect").catch(() => []);
-    const taken = (s: DetectedShell) =>
+    const isTaken = (s: DetectedShell) =>
         profiles.some(
             (p) =>
                 p.name.toLowerCase() === s.name.toLowerCase() ||
                 p.config?.shell?.toLowerCase() === s.shell.toLowerCase(),
         );
-    const detectedShells = await detected;
-    const extra = detectedShells
-        .filter((s) => !taken(s))
+    const detected = await detectShells();
+    const extra = detected
+        .filter((s) => !isTaken(s))
         .map((s) => ({ name: s.name, config: { shell: s.shell, shellArgs: s.shellArgs } }));
     return [...profiles, ...extra];
 }
@@ -104,19 +100,18 @@ function parseJsonc<T>(name: string, text: string, errors: string[]): T | undefi
 
 const lastGood: { settings?: Record<string, unknown>; keybindings?: Keybinding[] } = {};
 
-/**
- * First run: imports an existing Hyper config if there is one, otherwise
- * writes commented starter files. Schemas are refreshed every start.
- */
+/** First run imports Hyper's config or writes starter files. Schemas refresh every start. */
 export async function ensureConfigFiles(commands: string[]): Promise<string[]> {
     const notes: string[] = [];
     await write("settings.schema.json", JSON.stringify(SETTINGS_SCHEMA, null, 2));
     await write("keybindings.schema.json", JSON.stringify(keybindingsSchema(commands), null, 2));
     if ((await read(SETTINGS)) === null) {
-        const imported = await importHyperConfig().catch((error) => {
+        let imported: Awaited<ReturnType<typeof importHyperConfig>> = null;
+        try {
+            imported = await importHyperConfig();
+        } catch (error) {
             notes.push(`Couldn't import your Hyper config: ${error}`);
-            return null;
-        });
+        }
         if (imported) {
             await write(SETTINGS, imported.settings);
             if ((await read(KEYBINDINGS)) === null) await write(KEYBINDINGS, imported.keybindings);
@@ -132,17 +127,19 @@ export async function ensureConfigFiles(commands: string[]): Promise<string[]> {
 export async function loadConfig(): Promise<Loaded> {
     const errors: string[] = [];
 
-    const settingsText = await read(SETTINGS).catch((error) => {
+    let settingsText: string | null = null;
+    try {
+        settingsText = await read(SETTINGS);
+    } catch (error) {
         errors.push(String(error));
-        return null;
-    });
+    }
     let settings = settingsText
         ? parseJsonc<Record<string, unknown>>(SETTINGS, settingsText, errors)
         : {};
     if (settings === undefined) settings = lastGood.settings ?? {};
     else lastGood.settings = settings;
 
-    const keysText = await read(KEYBINDINGS).catch(() => null);
+    const keysText = await orElse(read(KEYBINDINGS), null);
     let keybindings = keysText ? parseJsonc<Keybinding[]>(KEYBINDINGS, keysText, errors) : [];
     if (keybindings === undefined) keybindings = lastGood.keybindings ?? [];
     else if (Array.isArray(keybindings)) {
@@ -192,15 +189,12 @@ export async function loadConfig(): Promise<Loaded> {
         ? config.themes.filter((t) => typeof t === "string" && t.trim())
         : [];
     if (themes.length > 0) {
-        // Some themes only fill in colors the user hasn't set (`config.x || themeX`).
-        // Hyper passed its defaults along, so those themes never applied; leave
-        // unset colors out so they do.
+        // Some themes only fill unset colors (`config.x || themeX`), so leave those out.
         const input: Record<string, unknown> = { ...config };
         for (const key of THEME_COLOR_KEYS) if (!themeSet.has(key)) delete input[key];
         const themed = await applyThemes(themes, input);
         errors.push(...themed.errors);
-        // Themes return a whole config; keep anything they dropped, and take
-        // only the settings that change how things look.
+        // Keep what themes dropped; take only looks.
         config = {
             ...config,
             ...themeChanges(themed.config),
@@ -219,11 +213,7 @@ export async function loadConfig(): Promise<Loaded> {
     };
 }
 
-/**
- * Sets the theme in settings.json, keeping its comments and formatting: a
- * Vanitty theme id in `colorTheme`, or Hyper themes in `themes`. Setting one
- * clears the other, and neither means Vanitty's own look.
- */
+/** Sets `colorTheme` or Hyper `themes` in settings.json (clearing the other), keeping comments. */
 export async function saveTheme(choice: { colorTheme?: string; themes?: string[] }) {
     let text = (await read(SETTINGS)) ?? SETTINGS_TEMPLATE;
     const problems: ParseError[] = [];

@@ -21,12 +21,12 @@ export function themeName(spec: string): string {
     return at > 0 ? s.slice(0, at) : s;
 }
 
-export async function installThemes(specs: string[], force = false): Promise<string[]> {
+export async function installThemes(specs: string[], shouldForce = false): Promise<string[]> {
     if (specs.length === 0) return [];
     const results = await invoke<InstallResult[]>("packages_install", {
         kind: "themes",
         specs,
-        force,
+        force: shouldForce,
     });
     return results
         .filter((r) => r.error)

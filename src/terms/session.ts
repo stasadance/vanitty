@@ -25,15 +25,12 @@ import {
 } from "./pty";
 
 import { platform, uiScale } from "../config/keymaps";
+import { orElse } from "../helpers";
 import { notify } from "../store";
 
 import type { TermConfig } from "../config/defaults";
 
-/**
- * Lets programs copy to the clipboard with OSC 52, which is how tmux, vim and
- * ssh sessions copy. Programs can't read the clipboard: a read gets nothing.
- * The Linux primary selection (`p` alone) isn't reachable, so it's skipped.
- */
+/** OSC 52 copy (tmux, vim, ssh). Reads get nothing; the Linux primary selection is skipped. */
 const osc52: IClipboardProvider = {
     readText: () => "",
     writeText: (selection, text) => {
@@ -120,13 +117,8 @@ export interface SearchFlags {
     regex: boolean;
 }
 
-/**
- * One terminal and its shell. Lives outside React so it survives the
- * remounts that happen when panes are split or closed.
- */
+/** A terminal and its shell, outside React so it survives pane remounts. */
 export class TermSession {
-    readonly term: Terminal;
-    readonly element: HTMLDivElement;
     private fit = new FitAddon();
     private search = new SearchAddon();
     private serializer = new SerializeAddon();
@@ -138,6 +130,8 @@ export class TermSession {
     private opened = false;
     private exited = false;
     private resizeTimer?: ReturnType<typeof setTimeout>;
+    readonly term: Terminal;
+    readonly element: HTMLDivElement;
     ptyId?: number;
     pid?: number | null;
     config: TermConfig;
@@ -160,17 +154,6 @@ export class TermSession {
         this.element = document.createElement("div");
         this.element.className = "term_fit term_term";
         this.setBell(config);
-    }
-
-    /** Moves the terminal into `container`, opening it on first use. */
-    attach(container: HTMLElement) {
-        if (this.element.parentElement !== container) container.append(this.element);
-        if (this.opened) {
-            this.fitNow();
-        } else {
-            this.opened = true;
-            this.open();
-        }
     }
 
     private open() {
@@ -228,19 +211,21 @@ export class TermSession {
         void this.start(this.spawn);
     }
 
-    private async start(options: Omit<SpawnOptions, "cols" | "rows">, fallback = false) {
-        const started = await spawnPty(
-            { ...options, cols: this.term.cols, rows: this.term.rows },
-            (data) => {
-                this.term.write(data);
-                this.events.onData(data);
-            },
-            (exited) => this.onPtyExit(exited, options, fallback),
-        ).catch((error) => {
+    private async start(options: Omit<SpawnOptions, "cols" | "rows">, isFallback = false) {
+        let started: Awaited<ReturnType<typeof spawnPty>>;
+        try {
+            started = await spawnPty(
+                { ...options, cols: this.term.cols, rows: this.term.rows },
+                (data) => {
+                    this.term.write(data);
+                    this.events.onData(data);
+                },
+                (exited) => this.onPtyExit(exited, options, isFallback),
+            );
+        } catch (error) {
             this.term.write(`\r\nCouldn't start the shell: ${error}\r\n`);
-            return undefined;
-        });
-        if (!started) return;
+            return;
+        }
         if (this.exited) {
             void killPty(started.id);
             return;
@@ -253,13 +238,12 @@ export class TermSession {
     private onPtyExit(
         exited: Exited,
         options: Omit<SpawnOptions, "cols" | "rows">,
-        fallback: boolean,
+        isFallback: boolean,
     ) {
         if (this.exited) return;
-        // A shell that fails right away usually means a broken shell setting, so
-        // say why and fall back to the default shell instead of closing.
+        // A shell that dies at once is likely misconfigured: say so, use the default.
         if (
-            !fallback &&
+            !isFallback &&
             exited.code > 0 &&
             exited.elapsedMs < 1000 &&
             (options.shell || options.shellArgs?.length)
@@ -277,6 +261,92 @@ export class TermSession {
         this.events.onExit();
     }
 
+    /** Padding goes on xterm's own element so the fit addon accounts for it. */
+    private applyPadding() {
+        if (!this.term.element) return;
+        this.term.element.style.padding = this.config.padding.replaceAll(
+            /(\d*\.?\d+)px/g,
+            (_, n: string) => `${Number(n) * uiScale}px`,
+        );
+    }
+
+    /** Must run before the WebGL addon loads so its atlas gets the font features. */
+    private applyLigatures() {
+        if (!this.config.disableLigatures && !this.ligatures) {
+            try {
+                this.ligatures = new LigaturesAddon();
+                this.term.loadAddon(this.ligatures);
+            } catch {
+                this.ligatures = undefined;
+            }
+        } else if (this.config.disableLigatures && this.ligatures) {
+            this.ligatures.dispose();
+            this.ligatures = undefined;
+        }
+    }
+
+    private applyRenderer() {
+        const isWant = this.config.webGLRenderer && alpha(this.config.backgroundColor) >= 1;
+        if (isWant && !this.webgl) {
+            try {
+                // Else WebKitGTK draws WebGL a frame late and typing lags.
+                const webgl = new WebglAddon(platform === "linux");
+                webgl.onContextLoss(() => {
+                    webgl.dispose();
+                    this.webgl = undefined;
+                });
+                this.term.loadAddon(webgl);
+                this.webgl = webgl;
+            } catch {
+                this.webgl = undefined;
+            }
+        } else if (!isWant && this.webgl) {
+            this.webgl.dispose();
+            this.webgl = undefined;
+        }
+    }
+
+    private applyImages() {
+        if (this.config.imageSupport && !this.image) {
+            this.image = new ImageAddon();
+            this.term.loadAddon(this.image);
+        } else if (!this.config.imageSupport && this.image) {
+            this.image.dispose();
+            this.image = undefined;
+        }
+    }
+
+    private setBell(c: TermConfig) {
+        this.bell =
+            c.bell && c.bell.toUpperCase() === "SOUND"
+                ? new Audio(c.bellSoundURL || c.bellSound || DEFAULT_BELL)
+                : null;
+    }
+
+    private onMouseUp(event: MouseEvent) {
+        if (this.config.quickEdit && event.button === 2) {
+            if (this.term.hasSelection()) {
+                void writeText(this.term.getSelection());
+                this.term.clearSelection();
+            } else {
+                void readText()
+                    .catch(() => "")
+                    .then((text) => text && this.paste(text));
+            }
+        }
+    }
+
+    /** Moves the terminal into `container`, opening it on first use. */
+    attach(container: HTMLElement) {
+        if (this.element.parentElement !== container) container.append(this.element);
+        if (this.opened) {
+            this.fitNow();
+        } else {
+            this.opened = true;
+            this.open();
+        }
+    }
+
     /** Screen and scrollback text, without what full-screen programs drew. */
     snapshot(): string {
         return this.opened
@@ -286,7 +356,7 @@ export class TermSession {
 
     /** The shell's current directory, else the one it started in. */
     async cwd(): Promise<string | undefined> {
-        const live = this.ptyId === undefined ? null : await ptyCwd(this.ptyId).catch(() => null);
+        const live = this.ptyId === undefined ? null : await orElse(ptyCwd(this.ptyId), null);
         return live || this.spawn.cwd || undefined;
     }
 
@@ -355,83 +425,7 @@ export class TermSession {
         this.fitNow();
     }
 
-    /** Padding goes on xterm's own element so the fit addon accounts for it. */
-    private applyPadding() {
-        if (!this.term.element) return;
-        this.term.element.style.padding = this.config.padding.replaceAll(
-            /(\d*\.?\d+)px/g,
-            (_, n: string) => `${Number(n) * uiScale}px`,
-        );
-    }
-
-    /** Must run before the WebGL addon loads so its atlas gets the font features. */
-    private applyLigatures() {
-        if (!this.config.disableLigatures && !this.ligatures) {
-            try {
-                this.ligatures = new LigaturesAddon();
-                this.term.loadAddon(this.ligatures);
-            } catch {
-                this.ligatures = undefined;
-            }
-        } else if (this.config.disableLigatures && this.ligatures) {
-            this.ligatures.dispose();
-            this.ligatures = undefined;
-        }
-    }
-
-    private applyRenderer() {
-        const want = this.config.webGLRenderer && alpha(this.config.backgroundColor) >= 1;
-        if (want && !this.webgl) {
-            try {
-                // WebKitGTK shows a WebGL canvas one draw behind unless the
-                // drawing buffer is preserved, so typed text appears late.
-                const webgl = new WebglAddon(platform === "linux");
-                webgl.onContextLoss(() => {
-                    webgl.dispose();
-                    this.webgl = undefined;
-                });
-                this.term.loadAddon(webgl);
-                this.webgl = webgl;
-            } catch {
-                this.webgl = undefined;
-            }
-        } else if (!want && this.webgl) {
-            this.webgl.dispose();
-            this.webgl = undefined;
-        }
-    }
-
-    private applyImages() {
-        if (this.config.imageSupport && !this.image) {
-            this.image = new ImageAddon();
-            this.term.loadAddon(this.image);
-        } else if (!this.config.imageSupport && this.image) {
-            this.image.dispose();
-            this.image = undefined;
-        }
-    }
-
-    private setBell(c: TermConfig) {
-        this.bell =
-            c.bell && String(c.bell).toUpperCase() === "SOUND"
-                ? new Audio(c.bellSoundURL || c.bellSound || DEFAULT_BELL)
-                : null;
-    }
-
-    private onMouseUp(event: MouseEvent) {
-        if (this.config.quickEdit && event.button === 2) {
-            if (this.term.hasSelection()) {
-                void writeText(this.term.getSelection());
-                this.term.clearSelection();
-            } else {
-                void readText()
-                    .catch(() => "")
-                    .then((text) => text && this.paste(text));
-            }
-        }
-    }
-
-    searchFind(term: string, flags: SearchFlags, backwards: boolean) {
+    searchFind(term: string, flags: SearchFlags, isBackwards: boolean) {
         const options: ISearchOptions = {
             ...flags,
             decorations: {
@@ -442,7 +436,7 @@ export class TermSession {
                 matchBorder: hex(this.config.cursorColor),
             },
         };
-        if (backwards) this.search.findPrevious(term, options);
+        if (isBackwards) this.search.findPrevious(term, options);
         else this.search.findNext(term, options);
     }
 

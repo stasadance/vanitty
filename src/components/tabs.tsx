@@ -22,18 +22,18 @@ export const Tabs = ({ titles, activeIndex, onNewTab }: Properties) => {
     const sessions = useStore((s) => s.sessions);
     const groups = useStore((s) => s.groups);
     const borderColor = useStore((s) => s.config.borderColor);
-    const fullScreen = useStore((s) => s.fullScreen);
+    const isFullScreen = useStore((s) => s.fullScreen);
     const isHidden = !isMac && tabs.length === 1;
 
     const hasActivity = (root: string) => {
-        const walk = (uid: string): boolean => {
+        const hasActivityIn = (uid: string): boolean => {
             const g = groups[uid];
             if (!g) return false;
             return g.sessionUid
                 ? !!sessions[g.sessionUid]?.hasActivity
-                : g.children.some((child) => walk(child));
+                : g.children.some((child) => hasActivityIn(child));
         };
-        return walk(root);
+        return hasActivityIn(root);
     };
 
     /** Drags a tab along the bar; it takes the place of the tab under the pointer. */
@@ -78,19 +78,19 @@ export const Tabs = ({ titles, activeIndex, onNewTab }: Properties) => {
                 <>
                     <ul
                         ref={listReference}
-                        className={`tabs_list ${isMac ? "tabs_listMac" : ""} ${fullScreen && isMac ? "tabs_fullScreen" : ""}`}
+                        className={`tabs_list ${isMac ? "tabs_listMac" : ""} ${isFullScreen && isMac ? "tabs_fullScreen" : ""}`}
                     >
                         {tabs.map((root, index) => {
                             const isActive = index === activeIndex;
                             const isFirst = index === 0;
-                            const activity = !isActive && hasActivity(root);
+                            const isActivity = !isActive && hasActivity(root);
                             return (
                                 <li
                                     key={root}
                                     style={{ borderColor }}
                                     className={`tab_tab ${isFirst ? "tab_first" : ""} ${isActive ? "tab_active" : ""} ${
                                         isFirst && isActive ? "tab_firstActive" : ""
-                                    } ${activity ? "tab_hasActivity" : ""} ${dragging === root ? "tab_dragging" : ""}`}
+                                    } ${isActivity ? "tab_hasActivity" : ""} ${dragging === root ? "tab_dragging" : ""}`}
                                 >
                                     <span
                                         className={`tab_text ${index === tabs.length - 1 ? "tab_textLast" : ""} ${isActive ? "tab_textActive" : ""}`}
@@ -116,7 +116,7 @@ export const Tabs = ({ titles, activeIndex, onNewTab }: Properties) => {
                     {isMac && (
                         <div
                             style={{ borderColor }}
-                            className={`tabs_borderShim ${fullScreen ? "tabs_borderShimUndo" : ""}`}
+                            className={`tabs_borderShim ${isFullScreen ? "tabs_borderShimUndo" : ""}`}
                         />
                     )}
                 </>

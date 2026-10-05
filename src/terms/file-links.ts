@@ -11,7 +11,7 @@ const LINE_SUFFIX = /(:\d+){1,2}$/;
 const TRAILING = /[.,;:!?]+$/;
 
 /** Cmd+Click on macOS, Ctrl+Click elsewhere, like VS Code. */
-const modifierHeld = (event: MouseEvent) => (isMac ? event.metaKey : event.ctrlKey);
+const isModifierHeld = (event: MouseEvent) => (isMac ? event.metaKey : event.ctrlKey);
 
 /** A path-looking token: has a separator, or is a name with an extension. */
 function candidate(token: string): string | undefined {
@@ -35,12 +35,7 @@ function lineText(line: IBufferLine, cols: number) {
     return { text, columns };
 }
 
-/**
- * Makes paths printed in the terminal clickable with Cmd/Ctrl+Click: files
- * open in a code editor and folders in the file manager (see `open_path`).
- * Relative paths resolve against the shell's current directory, and only
- * paths that exist become links.
- */
+/** Cmd/Ctrl+Click on existing paths: files open in an editor, folders in the file manager. */
 export function fileLinkProvider(
     term: Terminal,
     cwd: () => Promise<string | undefined>,
@@ -80,8 +75,8 @@ export function fileLinkProvider(
                             },
                             text: target,
                             activate(event) {
-                                if (!modifierHeld(event)) return;
-                                invoke("open_path", { path: target }).catch((error) =>
+                                if (!isModifierHeld(event)) return;
+                                void invoke("open_path", { path: target }).catch((error) =>
                                     onError(String(error)),
                                 );
                             },

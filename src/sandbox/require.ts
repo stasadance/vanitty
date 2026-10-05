@@ -60,8 +60,8 @@ export function makeRequire(sources: Record<string, string>, platform: string) {
     };
 
     const tryFile = (p: string) =>
-        [p, `${p}.js`, `${p}.json`, `${p}.cjs`, `${p}/index.js`, `${p}/index.json`].find(
-            (c) => c in sources,
+        [p, `${p}.js`, `${p}.json`, `${p}.cjs`, `${p}/index.js`, `${p}/index.json`].find((c) =>
+            Object.hasOwn(sources, c),
         );
 
     const resolvePackage = (directory: string): string | undefined => {
@@ -141,7 +141,7 @@ export function makeRequire(sources: Record<string, string>, platform: string) {
 
     const requireFrom = (spec: string, from: string) => {
         const bare = spec.replace(/^node:/, "");
-        return bare in builtins ? builtins[bare] : load(resolve(spec, from));
+        return Object.hasOwn(builtins, bare) ? builtins[bare] : load(resolve(spec, from));
     };
 
     return (name: string) => load(resolve(name, "__root__/x.js"));

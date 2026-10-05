@@ -17,6 +17,7 @@ import {
 import { KEYBINDINGS_TEMPLATE, SETTINGS_TEMPLATE } from "./config/defaults";
 import { importHyperConfig } from "./config/hyper";
 import { defaultKeybindings } from "./config/keymaps";
+import { orElse } from "./helpers";
 import { hasPluginCommand, runPluginCommand } from "./plugins/host";
 import { activeSessionUid, getState, notify, setState } from "./store";
 
@@ -69,7 +70,7 @@ export const COMMANDS: Record<string, Command> = {
     "window:hamburgerMenu": () => window.dispatchEvent(new CustomEvent("vanitty:hamburger")),
     "app:quit": async () => {
         // Keep every window for the next launch, not just the last one closed.
-        await invoke("session_quitting").catch(() => {});
+        await orElse(invoke("session_quitting"), undefined);
         const windows = await getAllWindows();
         for (const w of windows) await w.close();
     },
@@ -114,7 +115,7 @@ export const COMMANDS: Record<string, Command> = {
         if (term?.hasSelection()) void writeText(term.getSelection());
     },
     "editor:paste": async () => {
-        const text = await readText().catch(() => "");
+        const text = await orElse(readText(), "");
         if (!text) return;
         if (inInput()) document.execCommand("insertText", false, text);
         else activeTerm()?.paste(text);
@@ -155,10 +156,10 @@ const PROFILE_COMMAND = /^(tab:new|pane:splitRight|pane:splitDown|window:new):(.
 export function runCommand(id: string, argument?: string): boolean {
     const m = PROFILE_COMMAND.exec(id);
     const handler = COMMANDS[m ? m[1] : id];
-    if (!handler) return hasPluginCommand(id) ? runPluginCommand(id, argument) : false;
+    if (!handler) return hasPluginCommand(id) && runPluginCommand(id, argument);
     const result = handler(m?.[2] ?? argument);
     if (result instanceof Promise) {
-        result.catch((error) => notify(`${id} failed: ${error}`, true));
+        void result.catch((error) => notify(`${id} failed: ${error}`, true));
         return true;
     }
     return result !== false;

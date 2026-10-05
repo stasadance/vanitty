@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { focusActive } from "../actions";
 import { saveTheme } from "../config/load";
+import { cached } from "../helpers";
 import { notify, setState, useStore } from "../store";
 import { themeName } from "../themes";
 import { CURATED_THEMES } from "../themes/curated";
@@ -30,15 +31,7 @@ interface Item {
 }
 
 /** Fetched once per run; Rust also keeps it on disk for a day. */
-let npmThemes: Promise<Listing[]> | undefined;
-
-function loadNpmThemes() {
-    npmThemes ??= invoke<Listing[]>("themes_list").catch((error) => {
-        npmThemes = undefined;
-        throw error;
-    });
-    return npmThemes;
-}
+const loadNpmThemes = cached(() => invoke<Listing[]>("themes_list"));
 
 function close() {
     setState({ themePicker: false });
@@ -49,10 +42,7 @@ function shortCount(n: number) {
     return n >= 1000 ? `${(n / 1000).toFixed(n >= 10_000 ? 0 : 1)}k` : String(n);
 }
 
-/**
- * Picks a theme: Vanitty's built-in and your own JSON themes, reviewed Hyper
- * themes pinned to checked versions, then any other Hyper theme on npm.
- */
+/** Vanitty and your JSON themes, reviewed Hyper themes, then the rest of npm. */
 export const ThemePicker = () => {
     const config = useStore((s) => s.config);
     const [vanitty, setVanitty] = useState<Item[]>([]);
@@ -80,7 +70,7 @@ export const ThemePicker = () => {
                 })),
             ),
         );
-        loadNpmThemes()
+        void loadNpmThemes()
             .then(setNpm)
             .catch((loadError) => setError(`Couldn't load more themes from npm: ${loadError}`));
     }, []);
@@ -136,7 +126,7 @@ export const ThemePicker = () => {
 
     const pick = (t: Item) => {
         close();
-        saveTheme(t.choice).catch((saveError) => notify(String(saveError), true));
+        void saveTheme(t.choice).catch((saveError) => notify(String(saveError), true));
     };
 
     return (
@@ -173,7 +163,7 @@ export const ThemePicker = () => {
                             }
                             case "Enter": {
                                 event.preventDefault();
-                                if (items[selected]) pick(items[selected]);
+                                if (selected < items.length) pick(items[selected]);
                                 break;
                             }
                             case "Escape": {

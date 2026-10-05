@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+import { counter } from "../helpers";
 import { lockdown, makeRequire } from "../sandbox/require";
 
 import type { Disposable, VanittyAPI, VanittyPlugin } from "./api";
@@ -8,14 +9,14 @@ lockdown();
 
 const post = (m: WorkerToHost) => self.postMessage(m);
 
-let nextCall = 0;
+const nextCall = counter();
 const pending = new Map<
     number,
     { resolve: (v: unknown) => void; reject: (error: Error) => void }
 >();
 const call = <T>(method: string, ...parameters: unknown[]) =>
     new Promise<T>((resolve, reject) => {
-        const id = nextCall++;
+        const id = nextCall();
         pending.set(id, { resolve: resolve as (v: unknown) => void, reject });
         post({ t: "call", id, method, args: parameters });
     });
@@ -36,7 +37,6 @@ function on(name: string, callback: (payload: any) => void): Disposable {
 }
 
 const commands = new Map<string, (argument?: string) => unknown>();
-let plugin: VanittyPlugin | undefined;
 
 function makeApi(name: string, platform: VanittyAPI["platform"]): VanittyAPI {
     const qualify = (id: string) => (/[:.]/.test(id) ? id : `${name}:${id}`);
@@ -73,8 +73,7 @@ function makeApi(name: string, platform: VanittyAPI["platform"]): VanittyAPI {
             onDidChange: (callback) => on("config", callback),
         },
         window: {
-            showNotification: (text, options) =>
-                void call("window.notify", String(text), !!options?.error),
+            showNotification: (text, options) => void call("window.notify", text, !!options?.error),
         },
         ui: {
             setHeaderItem: (id, item) => void call("ui.setHeaderItem", qualify(id), item),
@@ -84,70 +83,75 @@ function makeApi(name: string, platform: VanittyAPI["platform"]): VanittyAPI {
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-self.addEventListener("message", async (event: MessageEvent<HostToWorker>) => {
-    const m = event.data;
-    switch (m.t) {
-        case "activate": {
-            try {
-                const loaded = makeRequire(m.sources, m.platform)(m.entry);
-                plugin = (loaded?.activate ? loaded : loaded?.default) as VanittyPlugin;
-                if (typeof plugin?.activate !== "function")
-                    throw new TypeError("it doesn't export activate()");
-                await plugin.activate(makeApi(m.name, m.platform as VanittyAPI["platform"]));
-                post({ t: "ready" });
-            } catch (error) {
-                post({ t: "failed", error: errorText(error) });
-            }
-            break;
-        }
-        case "result": {
-            const p = pending.get(m.id);
-            pending.delete(m.id);
-            if (m.error === undefined) {
-                p?.resolve(m.value);
-            } else {
-                p?.reject(new Error(m.error));
-            }
-            break;
-        }
-        case "event": {
-            const callbacks = listeners.get(m.name) ?? [];
-            for (const callback of callbacks) {
+/** Hosts one plugin, activated by the first message. */
+function serve() {
+    let plugin: VanittyPlugin | undefined;
+    self.addEventListener("message", async (event: MessageEvent<HostToWorker>) => {
+        const m = event.data;
+        switch (m.t) {
+            case "activate": {
                 try {
-                    callback(m.payload);
+                    const loaded = makeRequire(m.sources, m.platform)(m.entry);
+                    plugin = (loaded?.activate ? loaded : loaded?.default) as VanittyPlugin;
+                    if (typeof plugin?.activate !== "function")
+                        throw new TypeError("it doesn't export activate()");
+                    await plugin.activate(makeApi(m.name, m.platform as VanittyAPI["platform"]));
+                    post({ t: "ready" });
                 } catch (error) {
-                    console.error(error);
+                    post({ t: "failed", error: errorText(error) });
                 }
+                break;
             }
-            break;
-        }
-        case "invoke": {
-            const handler = commands.get(m.command);
-            try {
-                const value = await handler?.(m.arg);
-                post({
-                    t: "result",
-                    id: m.id,
-                    value:
-                        value === undefined
-                            ? undefined
-                            : // Drops functions and other values postMessage can't clone,
-                              // where structuredClone would throw.
-                              // eslint-disable-next-line unicorn/prefer-structured-clone
-                              JSON.parse(JSON.stringify(value)),
-                });
-            } catch (error) {
-                post({ t: "result", id: m.id, error: errorText(error) });
+            case "result": {
+                const p = pending.get(m.id);
+                pending.delete(m.id);
+                if (m.error === undefined) {
+                    p?.resolve(m.value);
+                } else {
+                    p?.reject(new Error(m.error));
+                }
+                break;
             }
-            break;
-        }
-        case "deactivate": {
-            try {
-                await plugin?.deactivate?.();
-            } finally {
-                post({ t: "deactivated" });
+            case "event": {
+                const callbacks = listeners.get(m.name) ?? [];
+                for (const callback of callbacks) {
+                    try {
+                        callback(m.payload);
+                    } catch (error) {
+                        console.error(error);
+                    }
+                }
+                break;
             }
-            break;
+            case "invoke": {
+                const handler = commands.get(m.command);
+                try {
+                    const value = await handler?.(m.arg);
+                    post({
+                        t: "result",
+                        id: m.id,
+                        value:
+                            value === undefined
+                                ? undefined
+                                : // structuredClone throws on functions; JSON drops them.
+                                  // eslint-disable-next-line unicorn/prefer-structured-clone
+                                  JSON.parse(JSON.stringify(value)),
+                    });
+                } catch (error) {
+                    post({ t: "result", id: m.id, error: errorText(error) });
+                }
+                break;
+            }
+            case "deactivate": {
+                try {
+                    await plugin?.deactivate?.();
+                } finally {
+                    post({ t: "deactivated" });
+                }
+                break;
+            }
         }
-    }
-});
+    });
+}
+
+serve();

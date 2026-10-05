@@ -26,7 +26,7 @@ export const Header = () => {
     const borderColor = useStore((s) => s.config.borderColor);
     const showHamburgerMenu = useStore((s) => s.config.showHamburgerMenu);
     const showWindowControls = useStore((s) => s.config.showWindowControls);
-    const maximized = useStore((s) => s.maximized);
+    const isMaximized = useStore((s) => s.maximized);
     const titles = useTabTitles();
     const activeIndex = activeRoot ? tabs.indexOf(activeRoot) : -1;
     const title = tabs.length === 1 ? titles[0] : "Vanitty";
@@ -78,7 +78,7 @@ export const Header = () => {
                                 className={`header_shape ${isLeft ? "header_maximizeWindowLeft" : ""}`}
                                 onClick={() => void win.toggleMaximize()}
                             >
-                                {maximized ? <Restore /> : <Maximize />}
+                                {isMaximized ? <Restore /> : <Maximize />}
                             </div>
                             <div
                                 className={`header_shape header_closeWindow ${isLeft ? "header_closeWindowLeft" : ""}`}

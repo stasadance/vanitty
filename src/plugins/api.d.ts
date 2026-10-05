@@ -1,9 +1,9 @@
 /**
- * The API a Vanitty plugin receives in `activate(vanitty)`.
- *
- * Plugins run in a sandboxed Web Worker: no DOM, no network, no direct access
- * to the app. Everything goes through this object.
- */
+The API a Vanitty plugin receives in `activate(vanitty)`.
+
+Plugins run in a sandboxed Web Worker: no DOM, no network, no direct access
+to the app. Everything goes through this object.
+*/
 export interface Disposable {
     dispose(): void;
 }
@@ -30,9 +30,9 @@ export interface VanittyAPI {
 
     commands: {
         /**
-         * Adds a command that keybindings and other plugins can run. Ids without
-         * a namespace are prefixed with the plugin name, e.g. "my-plugin:hello".
-         */
+        Adds a command that keybindings and other plugins can run. Ids without
+        a namespace are prefixed with the plugin name, e.g. "my-plugin:hello".
+        */
         register(id: string, handler: (argument?: string) => unknown): Disposable;
         /** Runs any command, e.g. "tab:new" or "pane:splitRight". */
         execute(id: string, argument?: string): Promise<void>;

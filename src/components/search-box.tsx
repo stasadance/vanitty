@@ -6,7 +6,7 @@ import type { SearchFlags } from "../terms/session";
 
 interface Properties {
     results?: { resultIndex: number; resultCount: number };
-    find: (term: string, flags: SearchFlags, backwards: boolean) => void;
+    find: (term: string, flags: SearchFlags, isBackwards: boolean) => void;
     close: () => void;
     colors: { foreground: string; background: string; border: string; selection: string };
     font: string;

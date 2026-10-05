@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
 import { platform } from "../config/keymaps";
+import { serial } from "../helpers";
 import { getState, notify, setState, type State } from "../store";
 
 import type { InstallResult } from "../themes";
@@ -19,9 +20,11 @@ class PluginWorker {
     private worker: Worker;
     private nextId = 0;
     private pending = new Map<number, (r: { value?: unknown; error?: string }) => void>();
+    private headerItems = new Set<string>();
+    private onReady = () => {};
     readonly subscriptions = new Set<string>();
     readonly commands = new Set<string>();
-    private headerItems = new Set<string>();
+    ready: Promise<void>;
 
     constructor(
         readonly name: string,
@@ -50,35 +53,6 @@ class PluginWorker {
             };
         });
         this.post({ t: "activate", name, entry, sources, platform });
-    }
-
-    ready: Promise<void>;
-    private onReady = () => {};
-
-    post(m: HostToWorker) {
-        this.worker.postMessage(m);
-    }
-
-    emit(name: string, payload: unknown) {
-        if (this.subscriptions.has(name)) this.post({ t: "event", name, payload });
-    }
-
-    invoke(command: string, argument?: string) {
-        const id = this.nextId++;
-        return new Promise<unknown>((resolve, reject) => {
-            this.pending.set(id, (r) =>
-                r.error === undefined ? resolve(r.value) : reject(new Error(r.error)),
-            );
-            this.post({ t: "invoke", id, command, arg: argument });
-        });
-    }
-
-    stop() {
-        this.post({ t: "deactivate" });
-        // Give deactivate() a moment, then terminate regardless.
-        setTimeout(() => this.worker.terminate(), 500);
-        for (const id of this.headerItems) setHeaderItem(id, null);
-        for (const c of this.commands) pluginCommands.delete(c);
     }
 
     private onMessage(m: WorkerToHost) {
@@ -167,9 +141,7 @@ class PluginWorker {
                 else this.headerItems.delete(id);
                 setHeaderItem(
                     id,
-                    item
-                        ? { text: String(item.text), tooltip: item.tooltip, command: item.command }
-                        : null,
+                    item ? { text: item.text, tooltip: item.tooltip, command: item.command } : null,
                 );
                 return;
             }
@@ -177,6 +149,32 @@ class PluginWorker {
                 throw new Error(`Unknown method ${method}`);
             }
         }
+    }
+
+    post(m: HostToWorker) {
+        this.worker.postMessage(m);
+    }
+
+    emit(name: string, payload: unknown) {
+        if (this.subscriptions.has(name)) this.post({ t: "event", name, payload });
+    }
+
+    invoke(command: string, argument?: string) {
+        const id = this.nextId++;
+        return new Promise<unknown>((resolve, reject) => {
+            this.pending.set(id, (r) =>
+                r.error === undefined ? resolve(r.value) : reject(new Error(r.error)),
+            );
+            this.post({ t: "invoke", id, command, arg: argument });
+        });
+    }
+
+    stop() {
+        this.post({ t: "deactivate" });
+        // Give deactivate() a moment, then terminate regardless.
+        setTimeout(() => this.worker.terminate(), 500);
+        for (const id of this.headerItems) setHeaderItem(id, null);
+        for (const c of this.commands) pluginCommands.delete(c);
     }
 }
 
@@ -199,8 +197,6 @@ export function terminalInfos(s: State): TerminalInfo[] {
     }));
 }
 
-let workers: PluginWorker[] = [];
-let loadedKey = "";
 const pluginCommands = new Map<string, PluginWorker>();
 
 export function hasPluginCommand(id: string) {
@@ -210,57 +206,72 @@ export function hasPluginCommand(id: string) {
 export function runPluginCommand(id: string, argument?: string) {
     const w = pluginCommands.get(id);
     if (!w) return false;
-    w.invoke(id, argument).catch((error) => notify(`${id}: ${error.message}`, true));
+    void w.invoke(id, argument).catch((error) => notify(`${id}: ${error.message}`, true));
     return true;
 }
 
-export function emit(name: string, payload: unknown) {
-    for (const w of workers) w.emit(name, payload);
+/** The running plugin workers. */
+class Plugins {
+    private workers: PluginWorker[] = [];
+    private loadedKey = "";
+
+    emit(name: string, payload: unknown) {
+        for (const w of this.workers) w.emit(name, payload);
+    }
+
+    wants(name: string) {
+        return this.workers.some((w) => w.subscriptions.has(name));
+    }
+
+    async sync(bridge: Bridge) {
+        const { plugins = [], localPlugins = [] } = getState().config;
+        const npm = plugins.filter((p) => typeof p === "string" && p.trim());
+        const local = localPlugins.filter((p) => typeof p === "string" && /^[\w.-]+$/.test(p));
+        const key = JSON.stringify([npm, local]);
+        if (key === this.loadedKey) {
+            this.emit("config", getState().config);
+            return;
+        }
+        this.loadedKey = key;
+        for (const w of this.workers) w.stop();
+        this.workers = [];
+        if (npm.length === 0 && local.length === 0) return;
+
+        if (npm.length > 0) {
+            const results = await invoke<InstallResult[]>("packages_install", {
+                kind: "plugins",
+                specs: npm,
+                force: false,
+            });
+            for (const r of results)
+                if (r.error) notify(`Couldn't install plugin ${r.name}: ${r.error}`, true);
+        }
+        const sources = await invoke<Record<string, string>>("packages_sources", {
+            kind: "plugins",
+        });
+        const names = [...npm.map((spec) => packageName(spec)), ...local.map((l) => `@local/${l}`)];
+        for (const name of names) {
+            if (Object.keys(sources).every((k) => !k.startsWith(`${name}/`))) {
+                notify(`Plugin ${name} isn't installed.`, true);
+                continue;
+            }
+            this.workers.push(
+                new PluginWorker(name.replace(/^@local\//, ""), name, sources, bridge),
+            );
+        }
+    }
 }
+
+const plugins = new Plugins();
+const syncs = serial();
+
+export const emit = (name: string, payload: unknown) => plugins.emit(name, payload);
 
 /** True when any plugin listens for this event (skips work for terminal output). */
-export function wants(name: string) {
-    return workers.some((w) => w.subscriptions.has(name));
-}
+export const isWanted = (name: string) => plugins.wants(name);
 
-/**
- * Starts the plugins named in settings. npm plugins are installed first;
- * local ones live in `plugins/local/<name>`. Restarts them all when the list
- * changes, otherwise just tells them the config changed.
- */
-export async function syncPlugins(bridge: Bridge) {
-    const { plugins = [], localPlugins = [] } = getState().config;
-    const npm = plugins.filter((p) => typeof p === "string" && p.trim());
-    const local = localPlugins.filter((p) => typeof p === "string" && /^[\w.-]+$/.test(p));
-    const key = JSON.stringify([npm, local]);
-    if (key === loadedKey) {
-        emit("config", getState().config);
-        return;
-    }
-    loadedKey = key;
-    for (const w of workers) w.stop();
-    workers = [];
-    if (npm.length === 0 && local.length === 0) return;
-
-    if (npm.length > 0) {
-        const results = await invoke<InstallResult[]>("packages_install", {
-            kind: "plugins",
-            specs: npm,
-            force: false,
-        });
-        for (const r of results)
-            if (r.error) notify(`Couldn't install plugin ${r.name}: ${r.error}`, true);
-    }
-    const sources = await invoke<Record<string, string>>("packages_sources", { kind: "plugins" });
-    const names = [...npm.map((spec) => packageName(spec)), ...local.map((l) => `@local/${l}`)];
-    for (const name of names) {
-        if (Object.keys(sources).every((k) => !k.startsWith(`${name}/`))) {
-            notify(`Plugin ${name} isn't installed.`, true);
-            continue;
-        }
-        workers.push(new PluginWorker(name.replace(/^@local\//, ""), name, sources, bridge));
-    }
-}
+/** Starts the plugins in settings, restarting all when the list changes. One sync at a time. */
+export const syncPlugins = (bridge: Bridge) => syncs(() => plugins.sync(bridge));
 
 function packageName(spec: string) {
     const s = spec.trim().split("#", 1)[0];

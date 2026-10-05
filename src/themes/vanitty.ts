@@ -2,11 +2,9 @@ import { invoke } from "@tauri-apps/api/core";
 import Color from "color";
 import { parse, type ParseError } from "jsonc-parser";
 
-/**
- * A Vanitty theme: a JSON file of colors and optional CSS. Unlike Hyper
- * themes it's data, so nothing runs. Only the settings that change how
- * Vanitty looks are taken from it (see `themeChanges`).
- */
+import { orElse } from "../helpers";
+
+/** A JSON theme of colors and CSS. Nothing runs, and only looks apply (`themeChanges`). */
 export interface VanittyTheme {
     /** File name without `.json`; what `colorTheme` in settings.json names. */
     id: string;
@@ -33,13 +31,13 @@ function themeType(data: Record<string, unknown>): VanittyTheme["type"] {
     }
 }
 
-function fromData(id: string, data: Record<string, unknown>, builtin: boolean): VanittyTheme {
+function fromData(id: string, data: Record<string, unknown>, isBuiltin: boolean): VanittyTheme {
     return {
         id,
         name: typeof data.name === "string" && data.name ? data.name : id,
         type: themeType(data),
         author: typeof data.author === "string" ? data.author : undefined,
-        builtin,
+        builtin: isBuiltin,
         settings: data,
     };
 }
@@ -50,7 +48,7 @@ export async function vanittyThemes(): Promise<{ themes: VanittyTheme[]; errors:
         fromData(path.replaceAll(/^.*\/|\.json$/g, ""), data, true),
     );
     const errors: string[] = [];
-    const local = await invoke<Record<string, string>>("themes_local").catch(() => ({}));
+    const local = await orElse(invoke<Record<string, string>>("themes_local"), {});
     for (const [id, text] of Object.entries(local)) {
         const problems: ParseError[] = [];
         const data = parse(text, problems, { allowTrailingComma: true });

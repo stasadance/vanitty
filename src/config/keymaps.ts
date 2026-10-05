@@ -8,10 +8,9 @@ function detectPlatform(): Platform {
 export const platform = detectPlatform();
 export const isMac = platform === "macos";
 /**
- * Hyper zooms its page to 1.2 on Linux to get a normal default size there.
- * Vanitty scales the UI with CSS zoom and the terminal font by the same factor
- * instead, so devicePixelRatio stays whole and WebGL text stays sharp.
- */
+Hyper zooms to 1.2 on Linux. We scale the UI with CSS and the font by the same
+factor instead, so devicePixelRatio stays whole and WebGL text stays sharp.
+*/
 export const uiScale = platform === "linux" ? 1.2 : 1;
 
 type Keymap = Record<string, string | string[]>;
@@ -158,7 +157,7 @@ export function normalizeKey(key: string): string {
     const mods = new Set<string>();
     let main = "";
     for (const p of parts) {
-        if (MOD_ALIASES[p]) mods.add(MOD_ALIASES[p]);
+        if (Object.hasOwn(MOD_ALIASES, p)) mods.add(MOD_ALIASES[p]);
         else main = KEY_ALIASES[p] ?? p;
     }
     return main ? [...MOD_ORDER.filter((m) => mods.has(m)), main].join("+") : "";
@@ -186,7 +185,7 @@ export function eventKey(event: KeyboardEvent): string {
     if (/^Key[A-Z]$/.test(event.code)) main = event.code.slice(3).toLowerCase();
     else if (/^Digit\d$/.test(event.code)) main = event.code.slice(5);
     else if (/^Numpad\d$/.test(event.code)) main = event.code.slice(6);
-    else if (CODE_KEYS[event.code]) main = CODE_KEYS[event.code];
+    else if (Object.hasOwn(CODE_KEYS, event.code)) main = CODE_KEYS[event.code];
     else main = KEY_ALIASES[event.key.toLowerCase()] ?? event.key.toLowerCase();
     if (["control", "shift", "alt", "meta"].includes(main)) return "";
     const mods = [
@@ -198,11 +197,7 @@ export function eventKey(event: KeyboardEvent): string {
     return [...mods, main].join("+");
 }
 
-/**
- * Resolves the final key → command map: platform defaults, then the user's
- * keybindings.json in order, VS Code style ("-command" removes a binding).
- * Legacy Hyper `keymaps` objects are accepted too.
- */
+/** Key → command: platform defaults, then keybindings.json in order ("-command" unbinds). */
 export function buildKeymap(user: Keybinding[]): Map<string, string> {
     const bindings: Keybinding[] = [];
     const add = (command: string, keys: string | string[]) => {

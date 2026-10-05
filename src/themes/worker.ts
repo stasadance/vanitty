@@ -3,8 +3,7 @@ import { lockdown, makeRequire } from "../sandbox/require";
 
 lockdown();
 
-// Evaluates Hyper theme packages. Runs in a worker so theme code has no
-// access to the DOM, the Tauri IPC bridge or the network.
+// Runs Hyper themes away from the DOM, Tauri IPC and the network.
 
 interface Request {
     sources: Record<string, string>;

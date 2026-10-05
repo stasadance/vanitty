@@ -1,7 +1,8 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
+import { orElse } from "./helpers";
 import { markDirty } from "./persist";
-import { emit, wants } from "./plugins/host";
+import { emit, isWanted } from "./plugins/host";
 import {
     activeSessionUid,
     type Direction,
@@ -35,11 +36,6 @@ export function fontSize(s: State = getState()) {
     return s.fontSizeOverride ?? s.config.fontSize;
 }
 
-let lastResize = 0;
-export const markResized = () => {
-    lastResize = Date.now();
-};
-
 /** A pane from the last run to bring back. */
 export interface RestoredPane {
     uid: string;
@@ -64,7 +60,7 @@ export async function newSession(
     if (restored) {
         cwd = restored.cwd || cwd;
     } else if (activePty !== undefined && s.config.preserveCWD) {
-        cwd = (await ptyCwd(activePty).catch(() => null)) || cwd;
+        cwd = (await orElse(ptyCwd(activePty), null)) || cwd;
     }
 
     const sessionUid = restored?.uid ?? uid("s");
@@ -85,18 +81,18 @@ export async function newSession(
                 emit("terminal.title", { id: sessionUid, title });
             },
             onInput: (data) => {
-                if (wants("terminal.input")) emit("terminal.input", { id: sessionUid, data });
+                if (isWanted("terminal.input")) emit("terminal.input", { id: sessionUid, data });
             },
             onData: (bytes) => {
                 markDirty();
-                if (wants("terminal.data"))
+                if (isWanted("terminal.data"))
                     emit("terminal.data", {
                         id: sessionUid,
                         data: decoder.decode(bytes, { stream: true }),
                     });
                 const st = getState();
                 const g = groupOfSession(st.groups, sessionUid);
-                if (!g || Date.now() - lastResize < 1000) return;
+                if (!g || Date.now() - st.resizedAt < 1000) return;
                 const root = rootOf(st.groups, g.uid).uid;
                 if (root !== st.activeRoot && !st.sessions[sessionUid]?.hasActivity) {
                     updateSession(sessionUid, { hasActivity: true });
@@ -167,8 +163,7 @@ export async function split(direction: Direction, profile?: string) {
         const groups = { ...st.groups };
         const activeGroup = groupOfSession(groups, active);
         if (!activeGroup) return {};
-        // Same direction as the parent: add a sibling. Otherwise the active pane
-        // becomes a new split of its own.
+        // Same direction as the parent: add a sibling. Otherwise nest a new split.
         let parent = activeGroup.parentUid ? groups[activeGroup.parentUid] : activeGroup;
         if (parent.direction && parent.direction !== direction) parent = activeGroup;
 
@@ -269,8 +264,11 @@ function removeSession(sessionUid: string) {
                 }
                 groups[parent.uid] = { ...parent, children, sizes };
             }
-            const newRoot = rootOf(groups, groups[parent.uid] ? parent.uid : children[0]).uid;
-            if (activeSessions[newRoot] === sessionUid || !activeSessions[newRoot]) {
+            const newRoot = rootOf(
+                groups,
+                Object.hasOwn(groups, parent.uid) ? parent.uid : children[0],
+            ).uid;
+            if (activeSessions[newRoot] === sessionUid || !Object.hasOwn(activeSessions, newRoot)) {
                 const remaining = sessionsIn(groups, newRoot);
                 activeSessions[newRoot] = remaining[Math.min(index, remaining.length - 1)];
             }
@@ -310,7 +308,7 @@ export function setActiveSession(sessionUid: string) {
 }
 
 export function selectTab(rootUid: string) {
-    if (!getState().groups[rootUid]) return;
+    if (!Object.hasOwn(getState().groups, rootUid)) return;
     setState({ activeRoot: rootUid });
     clearActivity(rootUid);
     focusActive();
@@ -332,7 +330,6 @@ export function moveTab(delta: number) {
     selectTab(tabs[(index + delta + tabs.length) % tabs.length]);
 }
 
-/** Moves a tab to `index` in the tab bar. */
 export function reorderTab(rootUid: string, index: number) {
     setState((st) => {
         const from = st.tabs.indexOf(rootUid);
@@ -362,8 +359,10 @@ export function movePane(delta: number) {
 
 export function resizeGroup(groupUid: string, sizes: number[]) {
     if (sizes.some((x) => x < MIN_SIZE)) return;
-    markResized();
-    setState((st) => ({ groups: { ...st.groups, [groupUid]: { ...st.groups[groupUid], sizes } } }));
+    setState((st) => ({
+        groups: { ...st.groups, [groupUid]: { ...st.groups[groupUid], sizes } },
+        resizedAt: Date.now(),
+    }));
 }
 
 export function focusActive() {
@@ -378,10 +377,10 @@ export function activeTerm(): TermSession | undefined {
     return active ? terms.get(active) : undefined;
 }
 
-export function setSearch(sessionUid: string | undefined, open: boolean) {
+export function setSearch(sessionUid: string | undefined, isOpen: boolean) {
     if (!sessionUid) return;
-    updateSession(sessionUid, { search: open, searchResults: undefined });
-    if (open) return;
+    updateSession(sessionUid, { search: isOpen, searchResults: undefined });
+    if (isOpen) return;
     terms.get(sessionUid)?.searchClear();
     focusActive();
 }

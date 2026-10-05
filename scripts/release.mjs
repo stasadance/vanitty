@@ -1,9 +1,6 @@
 #!/usr/bin/env node
-// Bumps the version to YY.MM.PATCH (PATCH resets each month) on a
-// release/vX branch off origin/main, pushes it and opens a PR. Merging that PR
-// runs the Release workflow, which tags the merge and publishes the release.
-//
-//   pnpm release
+// `pnpm release`: opens a PR bumping to the next YY.MM.PATCH (PATCH resets
+// monthly). Merging it runs the Release workflow, which tags and publishes.
 
 import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";

@@ -1,9 +1,7 @@
 /**
- * Hyper themes reviewed for the theme picker. Each is pinned to the version
- * that was checked: it only sets colors, CSS and fonts, loads nothing from the
- * network and has no dependencies, so a later npm release can't change what
- * gets installed. Bump a version only after checking the new release.
- */
+Reviewed Hyper themes, pinned to the checked version: looks only, no network, no deps.
+Bump a version only after reviewing the new release.
+*/
 export const CURATED_THEMES: { spec: string; type: "light" | "dark"; description: string }[] = [
     { spec: "hyper-snazzy@1.3.0", type: "dark", description: "Elegant theme with bright colors" },
     { spec: "hyper-dracula@0.2.2", type: "dark", description: "Dracula, the dark purple classic" },
