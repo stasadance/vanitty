@@ -269,9 +269,36 @@ fn process_cwd(pid: u32) -> Option<PathBuf> {
     std::fs::read_link(format!("/proc/{pid}/cwd")).ok()
 }
 
+// libproc's `pidcwd` is a stub that always fails on macOS, so ask the kernel
+// directly.
 #[cfg(target_os = "macos")]
 fn process_cwd(pid: u32) -> Option<PathBuf> {
-    libproc::proc_pid::pidcwd(pid as i32).ok()
+    use std::os::unix::ffi::OsStringExt;
+
+    let mut info: libc::proc_vnodepathinfo = unsafe { std::mem::zeroed() };
+    let size = std::mem::size_of_val(&info) as libc::c_int;
+    // SAFETY: `info` is a writable `proc_vnodepathinfo` of exactly `size` bytes.
+    let written = unsafe {
+        libc::proc_pidinfo(
+            pid as libc::c_int,
+            libc::PROC_PIDVNODEPATHINFO,
+            0,
+            (&raw mut info).cast(),
+            size,
+        )
+    };
+    if written != size {
+        return None;
+    }
+    let path: Vec<u8> = info
+        .pvi_cdir
+        .vip_path
+        .as_flattened()
+        .iter()
+        .take_while(|&&c| c != 0)
+        .map(|&c| c as u8)
+        .collect();
+    (!path.is_empty()).then(|| std::ffi::OsString::from_vec(path).into())
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "macos")))]
