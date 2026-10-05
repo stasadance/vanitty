@@ -24,7 +24,8 @@ export const Tabs = ({ titles, activeIndex, onNewTab }: Properties) => {
     const groups = useStore((s) => s.groups);
     const borderColor = useStore((s) => s.config.borderColor);
     const isFullScreen = useStore((s) => s.fullScreen);
-    const isHidden = !isMac && tabs.length === 1;
+    // macOS always shows the bar, so a single tab looks like the rest.
+    const isVisible = isMac || tabs.length > 1;
 
     const hasActivity = (root: string) => {
         const hasActivityIn = (uid: string): boolean => {
@@ -67,15 +68,10 @@ export const Tabs = ({ titles, activeIndex, onNewTab }: Properties) => {
 
     return (
         <nav
-            className={`tabs_nav ${isHidden ? "tabs_hiddenNav" : ""} ${isMac ? "" : "tabs_navShifted"}`}
+            className={`tabs_nav ${isVisible ? "" : "tabs_hiddenNav"} ${isMac ? "" : "tabs_navShifted"}`}
             data-tauri-drag-region={isMac ? true : undefined}
         >
-            {tabs.length === 1 && isMac && (
-                <div className="tabs_title" data-tauri-drag-region>
-                    {titles[0]}
-                </div>
-            )}
-            {tabs.length > 1 && (
+            {isVisible && (
                 <>
                     <ul
                         ref={listReference}
@@ -122,8 +118,8 @@ export const Tabs = ({ titles, activeIndex, onNewTab }: Properties) => {
                     )}
                 </>
             )}
-            <NewTabButton tabsVisible={tabs.length > 1} onNewTab={onNewTab} />
-            {tabs.length > 1 && (
+            <NewTabButton tabsVisible={isVisible} onNewTab={onNewTab} />
+            {isVisible && (
                 <div
                     className="tabs_filler"
                     style={{ borderColor }}
