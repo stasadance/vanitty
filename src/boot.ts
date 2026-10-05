@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -15,6 +16,26 @@ import { terms } from "./terms/registry";
 import { startUpdateChecks } from "./updates";
 
 const reloads = serial();
+const launches = serial();
+
+/** A tab asked for by the `vanitty` command. */
+interface Launch {
+    cwd: string | null;
+    /** Runs instead of the shell when not empty. */
+    command: string[];
+}
+
+/** Opens the tabs `vanitty` asked this window for. Resolves to how many. */
+const openLaunches = () =>
+    launches(async () => {
+        const pending = await orElse(invoke<Launch[]>("cli_take"), []);
+        for (const { cwd, command } of pending) {
+            const run =
+                command.length > 0 ? { shell: command[0], shellArgs: command.slice(1) } : undefined;
+            await newTab(undefined, run, cwd ?? undefined);
+        }
+        return pending.length;
+    });
 
 /** Reloads settings, keybindings and plugins, one reload at a time. */
 const reloadConfig = () =>
@@ -110,6 +131,9 @@ export const boot = once(async () => {
         const active = activeSessionUid(s);
         if (active && active !== activeSessionUid(previous)) emit("terminal.active", active);
     });
-    if (!(await restoreSession())) await newTab();
+    const wasRestored = await restoreSession();
+    await listen("cli-open", () => void openLaunches());
+    const opened = await openLaunches();
+    if (!wasRestored && opened === 0) await newTab();
     await trackSession();
 });

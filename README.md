@@ -76,6 +76,17 @@ cargo install vanitty
 
 Needs Rust and the [Tauri prerequisites](https://tauri.app/start/prerequisites/). Builds from source don't update themselves.
 
+## Command line
+
+```sh
+vanitty               # new tab in the current folder
+vanitty ~/code        # new tab in ~/code
+vanitty -w .          # new window instead of a tab
+vanitty -- htop       # run htop in a new tab
+```
+
+It opens the tab in the Vanitty window you used last, or starts Vanitty. Linux installs put `vanitty` on your PATH, and so does the Windows setup `.exe` (not the `.msi`). On macOS, choose **Vanitty > Install vanitty Command…**.
+
 ## Settings
 
 Settings live in `~/.config/vanitty` (`%APPDATA%\Vanitty` on Windows, or `$XDG_CONFIG_HOME/vanitty`):

@@ -28,6 +28,11 @@
         "macOS": {
             "signingIdentity": "-"
         },
+        "windows": {
+            "nsis": {
+                "installerHooks": "windows/hooks.nsh"
+            }
+        },
         "linux": {
             "appimage": {
                 "bundleMediaFramework": true

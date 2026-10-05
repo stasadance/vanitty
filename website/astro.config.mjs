@@ -30,7 +30,7 @@ export default defineConfig({
             ],
             customCss: ["./src/styles/theme.css"],
             sidebar: [
-                { label: "Getting started", items: ["docs", "docs/install"] },
+                { label: "Getting started", items: ["docs", "docs/install", "docs/command-line"] },
                 {
                     label: "Configuration",
                     items: ["docs/settings", "docs/keybindings", "docs/themes"],
