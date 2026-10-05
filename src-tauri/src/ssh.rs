@@ -113,8 +113,16 @@ fn args(target: &Target) -> Vec<String> {
 /// the PTY library resolve relative entries against the tab's folder, and on
 /// Windows fall back to the current folder, so a planted `ssh.exe` in a
 /// cloned repo could run instead.
-fn find_ssh(path: Option<OsString>) -> Option<PathBuf> {
+fn find_ssh(dirs: impl IntoIterator<Item = PathBuf>) -> Option<PathBuf> {
     let name = if cfg!(windows) { "ssh.exe" } else { "ssh" };
+    dirs.into_iter()
+        .filter(|dir| dir.is_absolute())
+        .map(|dir| dir.join(name))
+        .find(|exe| exe.is_file())
+}
+
+/// Windows' own OpenSSH first, then `PATH`.
+fn ssh_dirs(path: Option<OsString>) -> Vec<PathBuf> {
     let system = cfg!(windows)
         .then(|| std::env::var_os("SystemRoot"))
         .flatten()
@@ -122,9 +130,7 @@ fn find_ssh(path: Option<OsString>) -> Option<PathBuf> {
     system
         .into_iter()
         .chain(path.iter().flat_map(std::env::split_paths))
-        .filter(|dir| dir.is_absolute())
-        .map(|dir| dir.join(name))
-        .find(|exe| exe.is_file())
+        .collect()
 }
 
 /// Checks a clicked `ssh://` link. Running it is up to the UI's prompt.
@@ -133,7 +139,7 @@ pub fn ssh_link(url: String) -> Result<SshLink, String> {
     let target = parse(&url).ok_or_else(|| {
         format!("Not connecting to {url}: only ssh://user@host:port links with a plain user name and host open.")
     })?;
-    let program = find_ssh(std::env::var_os("PATH"))
+    let program = find_ssh(ssh_dirs(std::env::var_os("PATH")))
         .ok_or("Couldn't find ssh. Install OpenSSH to open ssh:// links.")?;
     Ok(SshLink {
         destination: match &target.user {
@@ -276,12 +282,8 @@ mod tests {
         let name = if cfg!(windows) { "ssh.exe" } else { "ssh" };
         std::fs::write(bin.join(name), "").unwrap();
 
-        if !cfg!(windows) {
-            let relative = std::env::join_paths(["bin", "."]).unwrap();
-            assert_eq!(find_ssh(Some(relative)), None);
-        }
-        let absolute = std::env::join_paths([bin.clone()]).unwrap();
-        assert_eq!(find_ssh(Some(absolute)), Some(bin.join(name)));
+        assert_eq!(find_ssh([PathBuf::from("bin"), PathBuf::from(".")]), None);
+        assert_eq!(find_ssh([bin.clone()]), Some(bin.join(name)));
         std::fs::remove_dir_all(dir).unwrap();
     }
 }
