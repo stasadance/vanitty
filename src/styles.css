@@ -716,6 +716,13 @@ body,
     display: none;
 }
 
+/* WebKit's canvas text inherits text-rendering from the canvas element. The WebGL
+   glyph atlas draws its first glyphs detached and the rest inside .xterm, so the
+   rule on * made selected and colored text render differently on macOS. */
+.xterm canvas {
+    text-rendering: auto;
+}
+
 /* Thin rounded scrollbar thumb, inset from the edge. xterm sizes the slider
    inline, so the inset needs !important. */
 .xterm .xterm-scrollable-element > .scrollbar.vertical > .slider {
