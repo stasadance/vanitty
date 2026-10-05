@@ -10,12 +10,30 @@ const winCmd = "irm https://vanitty.dev/install.ps1 | iex";
 const sponsor = "https://github.com/sponsors/stasadance";
 
 const site = "https://vanitty.dev/";
-const title = "Vanitty: fast open-source terminal emulator, a Hyper alternative";
+const title = "Vanitty: Fast Open-Source Terminal for Windows, macOS & Linux";
 const description =
-    "Free, open-source terminal emulator for Windows, macOS and Linux. Fast and native, built with Rust and Tauri, with tabs, splits, themes and plugins.";
+    "Free, open-source terminal emulator for Windows, macOS and Linux, and a native alternative to Hyper. Built with Rust and Tauri, with tabs, splits, themes and plugins.";
 const ogImage = `${site}og.png`;
-// Lets Google show "Vanitty" as the site name in results.
-const jsonLd = { "@context": "https://schema.org", "@type": "WebSite", name: "Vanitty", url: site };
+// WebSite lets Google show "Vanitty" as the site name in results; SoftwareApplication
+// tells search engines what the app is, which platforms it runs on and that it's free.
+const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+        { "@type": "WebSite", name: "Vanitty", url: site },
+        {
+            "@type": "SoftwareApplication",
+            name: "Vanitty",
+            description,
+            url: site,
+            image: ogImage,
+            applicationCategory: "DeveloperApplication",
+            operatingSystem: "Windows, macOS, Linux",
+            downloadUrl: `${repo}/releases/latest`,
+            license: "https://opensource.org/licenses/MIT",
+            offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+        },
+    ],
+};
 
 const features = [
     {
@@ -157,7 +175,8 @@ const features = [
                     <h2>Configure it like your editor</h2>
                     <p>
                         Settings live in <code>~/.config/vanitty</code> as JSON with comments. Save
-                        the file and Vanitty reloads. On first run it imports your Hyper config.
+                        the file and Vanitty reloads. Coming from Hyper? Vanitty imports your Hyper
+                        config on first run.
                     </p>
                     <a href={`${base}/docs/settings/`}>All settings →</a>
                 </div>
