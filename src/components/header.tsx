@@ -1,11 +1,13 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
+
+import { Close, Hamburger, Maximize, Minimize, Restore } from "./icons";
+import { Tabs } from "./tabs";
+
 import { newTab } from "../actions";
-import { isMac } from "../config/keymaps";
 import { runCommand } from "../commands";
+import { isMac } from "../config/keymaps";
 import { popupHamburger, popupTitleMenu } from "../menu";
 import { useStore } from "../store";
-import { Close, Hamburger, Maximize, Minimize, Restore } from "./icons";
-import { Tabs } from "./Tabs";
 
 export function useTabTitles() {
     const tabs = useStore((s) => s.tabs);
@@ -18,7 +20,7 @@ export function useTabTitles() {
     });
 }
 
-export function Header() {
+export const Header = () => {
     const tabs = useStore((s) => s.tabs);
     const activeRoot = useStore((s) => s.activeRoot);
     const borderColor = useStore((s) => s.config.borderColor);
@@ -29,17 +31,17 @@ export function Header() {
     const activeIndex = activeRoot ? tabs.indexOf(activeRoot) : -1;
     const title = tabs.length === 1 ? titles[0] : "Vanitty";
 
-    const hambMenu = isMac ? false : showHamburgerMenu === "" ? true : !!showHamburgerMenu;
-    const winCtrls = isMac ? false : showWindowControls === "" ? true : showWindowControls;
-    const left = winCtrls === "left";
+    const isHambMenu = !isMac && (showHamburgerMenu === "" || !!showHamburgerMenu);
+    const winCtrls = !isMac && (showWindowControls === "" || showWindowControls);
+    const isLeft = winCtrls === "left";
     const win = getCurrentWindow();
 
     return (
         <header
             className={`header_header ${isMac ? "header_headerRounded" : ""}`}
-            onContextMenu={(e) => {
-                e.preventDefault();
-                void popupTitleMenu(e.clientX, e.clientY);
+            onContextMenu={(event) => {
+                event.preventDefault();
+                void popupTitleMenu(event.clientX, event.clientY);
             }}
         >
             {!isMac && (
@@ -48,11 +50,11 @@ export function Header() {
                     style={{ borderColor }}
                     data-tauri-drag-region
                 >
-                    {hambMenu && (
+                    {isHambMenu && (
                         <div
-                            className={`header_shape ${left ? "header_hamburgerMenuRight" : "header_hamburgerMenuLeft"}`}
-                            onClick={(e) => {
-                                const r = e.currentTarget.getBoundingClientRect();
+                            className={`header_shape ${isLeft ? "header_hamburgerMenuRight" : "header_hamburgerMenuLeft"}`}
+                            onClick={(event) => {
+                                const r = event.currentTarget.getBoundingClientRect();
                                 void popupHamburger(r.left + 8, r.bottom);
                             }}
                         >
@@ -64,22 +66,22 @@ export function Header() {
                     </span>
                     {winCtrls && (
                         <div
-                            className={`header_windowControls ${left ? "header_windowControlsLeft" : ""}`}
+                            className={`header_windowControls ${isLeft ? "header_windowControlsLeft" : ""}`}
                         >
                             <div
-                                className={`header_shape ${left ? "header_minimizeWindowLeft" : ""}`}
+                                className={`header_shape ${isLeft ? "header_minimizeWindowLeft" : ""}`}
                                 onClick={() => void win.minimize()}
                             >
                                 <Minimize />
                             </div>
                             <div
-                                className={`header_shape ${left ? "header_maximizeWindowLeft" : ""}`}
+                                className={`header_shape ${isLeft ? "header_maximizeWindowLeft" : ""}`}
                                 onClick={() => void win.toggleMaximize()}
                             >
                                 {maximized ? <Restore /> : <Maximize />}
                             </div>
                             <div
-                                className={`header_shape header_closeWindow ${left ? "header_closeWindowLeft" : ""}`}
+                                className={`header_shape header_closeWindow ${isLeft ? "header_closeWindowLeft" : ""}`}
                                 onClick={() => void win.close()}
                             >
                                 <Close />
@@ -89,16 +91,16 @@ export function Header() {
                 </div>
             )}
             <Tabs titles={titles} activeIndex={activeIndex} onNewTab={(p) => void newTab(p)} />
-            <HeaderItems right={isMac ? 12 : winCtrls && !left ? 132 : 12} />
+            <HeaderItems right={winCtrls && !isLeft ? 132 : 12} />
         </header>
     );
-}
+};
 
 /** Title bar items that plugins add. */
-function HeaderItems({ right }: { right: number }) {
+const HeaderItems = ({ right }: { right: number }) => {
     const items = useStore((s) => s.headerItems);
     const entries = Object.entries(items);
-    if (!entries.length) return null;
+    if (entries.length === 0) return null;
     return (
         <div className="header_pluginItems" style={{ right }}>
             {entries.map(([id, item]) => (
@@ -113,4 +115,4 @@ function HeaderItems({ right }: { right: number }) {
             ))}
         </div>
     );
-}
+};

@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import type { SearchFlags } from "../terms/session";
+
 import { ArrowDown, ArrowUp, Close } from "./icons";
 
-interface Props {
+import type { SearchFlags } from "../terms/session";
+
+interface Properties {
     results?: { resultIndex: number; resultCount: number };
     find: (term: string, flags: SearchFlags, backwards: boolean) => void;
     close: () => void;
@@ -10,7 +12,10 @@ interface Props {
     font: string;
 }
 
-export function SearchBox({ results, find, close, colors, font }: Props) {
+const resultsText = ({ resultIndex, resultCount }: { resultIndex: number; resultCount: number }) =>
+    resultCount === 0 ? "No results" : `${resultIndex + 1} of ${resultCount}`;
+
+export const SearchBox = ({ results, find, close, colors, font }: Properties) => {
     const input = useRef<HTMLInputElement>(null);
     const [term, setTerm] = useState("");
     const [flags, setFlags] = useState<SearchFlags>({
@@ -47,7 +52,7 @@ export function SearchBox({ results, find, close, colors, font }: Props) {
                 borderColor: colors.border,
                 fontFamily: font,
             }}
-            onMouseDown={(e) => e.stopPropagation()}
+            onMouseDown={(event) => event.stopPropagation()}
         >
             <div className="search-box" style={{ borderColor: colors.border }}>
                 <input
@@ -56,16 +61,16 @@ export function SearchBox({ results, find, close, colors, font }: Props) {
                     type="text"
                     placeholder="Search"
                     value={term}
-                    onChange={(e) => {
-                        setTerm(e.target.value);
-                        find(e.target.value, flags, false);
+                    onChange={(event) => {
+                        setTerm(event.target.value);
+                        find(event.target.value, flags, false);
                     }}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                            e.preventDefault();
-                            find(term, flags, e.shiftKey);
-                        } else if (e.key === "Escape") {
-                            e.preventDefault();
+                    onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                            event.preventDefault();
+                            find(term, flags, event.shiftKey);
+                        } else if (event.key === "Escape") {
+                            event.preventDefault();
                             close();
                         }
                     }}
@@ -75,11 +80,7 @@ export function SearchBox({ results, find, close, colors, font }: Props) {
                 {button("regex", ".*", "Use Regular Expression")}
             </div>
             <span className="search-results">
-                {results === undefined || !term
-                    ? ""
-                    : results.resultCount === 0
-                      ? "No results"
-                      : `${results.resultIndex + 1} of ${results.resultCount}`}
+                {results !== undefined && term && resultsText(results)}
             </span>
             <div
                 className="search-button"
@@ -100,4 +101,4 @@ export function SearchBox({ results, find, close, colors, font }: Props) {
             </div>
         </div>
     );
-}
+};

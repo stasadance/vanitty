@@ -23,9 +23,10 @@ build-ui:
 build:
     pnpm tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'
 
-# Typecheck, format check, lint and test, like CI
+# Typecheck, lint, format check, clippy and test, like CI
 check:
     pnpm typecheck
+    pnpm lint
     pnpm format:check
     cargo fmt {{manifest}} --check
     cargo clippy {{manifest}} --all-targets -- -D warnings

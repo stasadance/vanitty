@@ -47,20 +47,20 @@ function fromData(id: string, data: Record<string, unknown>, builtin: boolean): 
 /** Built-in themes, then yours from the `themes` folder. Broken files are reported. */
 export async function vanittyThemes(): Promise<{ themes: VanittyTheme[]; errors: string[] }> {
     const themes = Object.entries(BUILTIN).map(([path, data]) =>
-        fromData(path.replace(/^.*\/|\.json$/g, ""), data, true),
+        fromData(path.replaceAll(/^.*\/|\.json$/g, ""), data, true),
     );
     const errors: string[] = [];
     const local = await invoke<Record<string, string>>("themes_local").catch(() => ({}));
     for (const [id, text] of Object.entries(local)) {
         const problems: ParseError[] = [];
         const data = parse(text, problems, { allowTrailingComma: true });
-        if (problems.length || !data || typeof data !== "object" || Array.isArray(data)) {
+        if (!data || typeof data !== "object" || Array.isArray(data) || problems.length > 0) {
             errors.push(`themes/${id}.json isn't a valid theme: it must be a JSON object.`);
             continue;
         }
         // Your own theme wins over a built-in one with the same file name.
-        const i = themes.findIndex((t) => t.id === id);
-        if (i >= 0) themes.splice(i, 1);
+        const index = themes.findIndex((t) => t.id === id);
+        if (index !== -1) themes.splice(index, 1);
         themes.push(fromData(id, data, false));
     }
     return { themes, errors };

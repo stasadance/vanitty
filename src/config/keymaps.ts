@@ -1,10 +1,11 @@
 export type Platform = "macos" | "linux" | "windows";
 
-export const platform: Platform = /Mac/.test(navigator.userAgent)
-    ? "macos"
-    : /Win/.test(navigator.userAgent)
-      ? "windows"
-      : "linux";
+function detectPlatform(): Platform {
+    if (/Mac/.test(navigator.userAgent)) return "macos";
+    return /Win/.test(navigator.userAgent) ? "windows" : "linux";
+}
+
+export const platform = detectPlatform();
 export const isMac = platform === "macos";
 /**
  * Hyper zooms its page to 1.2 on Linux to get a normal default size there.
@@ -160,8 +161,7 @@ export function normalizeKey(key: string): string {
         if (MOD_ALIASES[p]) mods.add(MOD_ALIASES[p]);
         else main = KEY_ALIASES[p] ?? p;
     }
-    if (!main) return "";
-    return [...MOD_ORDER.filter((m) => mods.has(m)), main].join("+");
+    return main ? [...MOD_ORDER.filter((m) => mods.has(m)), main].join("+") : "";
 }
 
 const CODE_KEYS: Record<string, string> = {
@@ -181,19 +181,19 @@ const CODE_KEYS: Record<string, string> = {
 };
 
 /** The canonical key for a keyboard event, matching `normalizeKey`. */
-export function eventKey(e: KeyboardEvent): string {
+export function eventKey(event: KeyboardEvent): string {
     let main: string;
-    if (/^Key[A-Z]$/.test(e.code)) main = e.code.slice(3).toLowerCase();
-    else if (/^Digit\d$/.test(e.code)) main = e.code.slice(5);
-    else if (/^Numpad\d$/.test(e.code)) main = e.code.slice(6);
-    else if (CODE_KEYS[e.code]) main = CODE_KEYS[e.code];
-    else main = KEY_ALIASES[e.key.toLowerCase()] ?? e.key.toLowerCase();
+    if (/^Key[A-Z]$/.test(event.code)) main = event.code.slice(3).toLowerCase();
+    else if (/^Digit\d$/.test(event.code)) main = event.code.slice(5);
+    else if (/^Numpad\d$/.test(event.code)) main = event.code.slice(6);
+    else if (CODE_KEYS[event.code]) main = CODE_KEYS[event.code];
+    else main = KEY_ALIASES[event.key.toLowerCase()] ?? event.key.toLowerCase();
     if (["control", "shift", "alt", "meta"].includes(main)) return "";
     const mods = [
-        e.ctrlKey && "ctrl",
-        e.altKey && "alt",
-        e.shiftKey && "shift",
-        e.metaKey && "meta",
+        event.ctrlKey && "ctrl",
+        event.altKey && "alt",
+        event.shiftKey && "shift",
+        event.metaKey && "meta",
     ].filter(Boolean);
     return [...mods, main].join("+");
 }
@@ -213,19 +213,19 @@ export function buildKeymap(user: Keybinding[]): Map<string, string> {
         add(command, keys);
     }
     const prefix = DEFAULT_KEYMAP["tab:jump:prefix"] as string;
-    for (let i = 1; i <= 8; i++) add(`tab:jump:${i}`, `${prefix}+${i}`);
+    for (let index = 1; index <= 8; index++) add(`tab:jump:${index}`, `${prefix}+${index}`);
     add("tab:jump:last", `${prefix}+9`);
 
     for (const b of user) {
         if (b.command.startsWith("-")) {
             const command = b.command.slice(1);
             const key = b.key ? normalizeKey(b.key) : "";
-            for (let i = bindings.length - 1; i >= 0; i--) {
+            for (let index = bindings.length - 1; index >= 0; index--) {
                 if (
-                    bindings[i].command === command &&
-                    (!key || normalizeKey(bindings[i].key) === key)
+                    bindings[index].command === command &&
+                    (!key || normalizeKey(bindings[index].key) === key)
                 ) {
-                    bindings.splice(i, 1);
+                    bindings.splice(index, 1);
                 }
             }
         } else {
@@ -246,8 +246,8 @@ export function fromHyperKeymaps(keymaps: Keymap): Keybinding[] {
     const out: Keybinding[] = [];
     for (const [command, keys] of Object.entries(keymaps)) {
         if (command === "tab:jump:prefix") {
-            for (let i = 1; i <= 8; i++)
-                out.push({ key: `${keys}+${i}`, command: `tab:jump:${i}` });
+            for (let index = 1; index <= 8; index++)
+                out.push({ key: `${keys}+${index}`, command: `tab:jump:${index}` });
             out.push({ key: `${keys}+9`, command: "tab:jump:last" });
             continue;
         }
@@ -265,6 +265,6 @@ export function defaultKeybindings(): Keybinding[] {
 
 /** First key bound to a command, formatted for menus. */
 export function keyFor(map: Map<string, string>, command: string): string | undefined {
-    for (const [key, cmd] of map) if (cmd === command) return key;
+    for (const [key, bound] of map) if (bound === command) return key;
     return undefined;
 }

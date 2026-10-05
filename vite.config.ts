@@ -1,8 +1,10 @@
-import { defineConfig } from "vite";
-import react, { reactCompilerPreset } from "@vitejs/plugin-react";
-import babel from "@rolldown/plugin-babel";
-// @ts-expect-error type error without @types/node package
 import process from "node:process";
+
+import babel from "@rolldown/plugin-babel";
+import react, { reactCompilerPreset } from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+
+// @ts-expect-error type error without @types/node package
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/

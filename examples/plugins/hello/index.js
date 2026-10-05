@@ -14,10 +14,12 @@ exports.activate = (vanitty) => {
     show();
 
     vanitty.terminals.onInput(({ data }) => {
-        if (data === "\r") {
-            commands++;
-            show();
+        if (data !== "\r") {
+            return;
         }
+
+        commands++;
+        show();
     });
 
     vanitty.commands.register("greet", () => vanitty.terminals.write("echo hello from a plugin\r"));

@@ -1,8 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+
 import { focusActive, newSession } from "./actions";
+import { getState, setState, type State, type TermGroup, useStore } from "./store";
 import { terms } from "./terms/registry";
-import { getState, setState, useStore, type State, type TermGroup } from "./store";
 
 /** What one window saves so the next launch can reopen it. */
 interface WindowSnapshot {
@@ -22,7 +23,7 @@ let saving: Promise<void> = Promise.resolve();
 const enabled = () => getState().config.restoreSession;
 
 async function snapshot(s: State): Promise<WindowSnapshot | null> {
-    if (!s.tabs.length) return null;
+    if (s.tabs.length === 0) return null;
     const panes: WindowSnapshot["panes"] = {};
     for (const [uid, session] of Object.entries(s.sessions)) {
         const term = terms.get(uid);
@@ -63,7 +64,7 @@ export function markDirty() {
 }
 
 function valid(snap: WindowSnapshot | null): snap is WindowSnapshot {
-    if (snap?.version !== 1 || !snap.tabs.length) return false;
+    if (snap?.version !== 1 || snap.tabs.length === 0) return false;
     const { groups, panes } = snap;
     return (
         snap.tabs.every((t) => groups[t]) &&
@@ -110,13 +111,13 @@ export async function restoreSession(): Promise<boolean> {
 
 /** Saves after layout changes, while output flows, and when the window closes. */
 export async function trackSession() {
-    useStore.subscribe((s, prev) => {
+    useStore.subscribe((s, previous) => {
         if (
-            s.tabs !== prev.tabs ||
-            s.groups !== prev.groups ||
-            s.activeRoot !== prev.activeRoot ||
-            s.activeSessions !== prev.activeSessions ||
-            s.sessions !== prev.sessions
+            s.tabs !== previous.tabs ||
+            s.groups !== previous.groups ||
+            s.activeRoot !== previous.activeRoot ||
+            s.activeSessions !== previous.activeSessions ||
+            s.sessions !== previous.sessions
         ) {
             markDirty();
         }

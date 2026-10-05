@@ -1,11 +1,12 @@
+import { PhysicalPosition } from "@tauri-apps/api/dpi";
 import {
     Menu,
     MenuItem,
+    type MenuItemOptions,
     PredefinedMenuItem,
     Submenu,
-    type MenuItemOptions,
 } from "@tauri-apps/api/menu";
-import { PhysicalPosition } from "@tauri-apps/api/dpi";
+
 import { runCommand } from "./commands";
 import { isMac, keyFor } from "./config/keymaps";
 import { getState } from "./store";
@@ -15,23 +16,30 @@ function accelerator(key: string | undefined) {
     if (!key) return undefined;
     const parts = key.split("+").map((p) => {
         switch (p) {
-            case "meta":
+            case "meta": {
                 return "Cmd";
-            case "ctrl":
+            }
+            case "ctrl": {
                 return "Ctrl";
-            case "alt":
+            }
+            case "alt": {
                 return "Alt";
-            case "shift":
+            }
+            case "shift": {
                 return "Shift";
-            case "esc":
+            }
+            case "esc": {
                 return "Escape";
+            }
             case "left":
             case "right":
             case "up":
-            case "down":
+            case "down": {
                 return `Arrow${p[0].toUpperCase()}${p.slice(1)}`;
-            default:
+            }
+            default: {
                 return p.length === 1 ? p.toUpperCase() : p[0].toUpperCase() + p.slice(1);
+            }
         }
     });
     return parts.join("+");
@@ -43,36 +51,37 @@ function accelerator(key: string | undefined) {
  * they're left off to avoid running a command twice.
  */
 async function item(text: string, command: string, withAccel = isMac) {
-    const opts: MenuItemOptions = { text, action: () => void runCommand(command) };
+    const options: MenuItemOptions = { text, action: () => void runCommand(command) };
     if (withAccel) {
         const accel = accelerator(keyFor(getState().keymap, command));
-        if (accel) opts.accelerator = accel;
+        if (accel) options.accelerator = accel;
     }
-    return MenuItem.new(opts);
+    return MenuItem.new(options);
 }
 
-const sep = () => PredefinedMenuItem.new({ item: "Separator" });
+const separator = () => PredefinedMenuItem.new({ item: "Separator" });
 
-async function profileItems(command: string) {
+async function newTabProfileItems() {
     const { profiles } = getState().config;
-    if (profiles.length < 2) return [];
-    return Promise.all(profiles.map((p) => item(p.name, `${command}:${p.name}`, false)));
+    return profiles.length < 2
+        ? []
+        : Promise.all(profiles.map((p) => item(p.name, `tab:new:${p.name}`, false)));
 }
 
 async function submenus(): Promise<Submenu[]> {
-    const newTabProfiles = await profileItems("tab:new");
+    const newTabProfiles = await newTabProfileItems();
     const shell = await Submenu.new({
         text: "Shell",
         items: [
             await item("New Tab", "tab:new"),
             await item("New Window", "window:new"),
-            ...(newTabProfiles.length
+            ...(newTabProfiles.length > 0
                 ? [await Submenu.new({ text: "New Tab with Profile", items: newTabProfiles })]
                 : []),
-            await sep(),
+            await separator(),
             await item("Split Right", "pane:splitRight"),
             await item("Split Down", "pane:splitDown"),
-            await sep(),
+            await separator(),
             await item("Close Pane", "pane:close"),
             await item("Close Window", "window:close"),
         ],
@@ -83,10 +92,10 @@ async function submenus(): Promise<Submenu[]> {
             await item("Copy", "editor:copy"),
             await item("Paste", "editor:paste"),
             await item("Select All", "editor:selectAll"),
-            await sep(),
+            await separator(),
             await item("Find", "editor:search"),
             await item("Clear Buffer", "editor:clearBuffer"),
-            ...(isMac ? [] : [await sep(), await item("Preferences…", "window:preferences")]),
+            ...(isMac ? [] : [await separator(), await item("Preferences…", "window:preferences")]),
         ],
     });
     const view = await Submenu.new({
@@ -95,7 +104,7 @@ async function submenus(): Promise<Submenu[]> {
             await item("Reload Config", "window:reload"),
             await item("Full Reload", "window:reloadFull"),
             await item("Developer Tools", "window:devtools"),
-            await sep(),
+            await separator(),
             await item("Reset Zoom", "zoom:reset"),
             await item("Zoom In", "zoom:in"),
             await item("Zoom Out", "zoom:out"),
@@ -108,7 +117,7 @@ async function submenus(): Promise<Submenu[]> {
             await item("Zoom", "window:zoom"),
             await item("Toggle Full Screen", "window:toggleFullScreen"),
             await item("Toggle Always on Top", "window:toggleKeepOnTop"),
-            await sep(),
+            await separator(),
             await item("Next Tab", "tab:next"),
             await item("Previous Tab", "tab:prev"),
             await item("Next Pane", "pane:next"),
@@ -122,7 +131,7 @@ async function submenus(): Promise<Submenu[]> {
             await item("Open Keybindings", "window:keybindings"),
             await item("Show Default Keybindings", "window:defaultKeybindings"),
             await item("Change Theme…", "window:themes"),
-            await sep(),
+            await separator(),
             await item("Import Hyper Config", "app:importHyper"),
         ],
     });
@@ -135,13 +144,13 @@ export async function installAppMenu() {
         text: "Vanitty",
         items: [
             await PredefinedMenuItem.new({ item: { About: { name: "Vanitty" } } }),
-            await sep(),
+            await separator(),
             await item("Settings…", "window:preferences"),
-            await sep(),
+            await separator(),
             await PredefinedMenuItem.new({ item: "Hide" }),
             await PredefinedMenuItem.new({ item: "HideOthers" }),
             await PredefinedMenuItem.new({ item: "ShowAll" }),
-            await sep(),
+            await separator(),
             await item("Quit Vanitty", "app:quit"),
         ],
     });
@@ -164,25 +173,25 @@ export async function popupHamburger(x: number, y: number) {
 }
 
 export async function popupContextMenu(x: number, y: number) {
-    const newTabProfiles = await profileItems("tab:new");
+    const newTabProfiles = await newTabProfileItems();
     const menu = await Menu.new({
         items: [
             await item("New Tab", "tab:new", false),
-            ...(newTabProfiles.length
+            ...(newTabProfiles.length > 0
                 ? [await Submenu.new({ text: "New Tab with Profile", items: newTabProfiles })]
                 : []),
-            await sep(),
+            await separator(),
             await item("Split Right", "pane:splitRight", false),
             await item("Split Down", "pane:splitDown", false),
             await item("Close Pane", "pane:close", false),
-            await sep(),
+            await separator(),
             await item("Copy", "editor:copy", false),
             await item("Paste", "editor:paste", false),
             await item("Select All", "editor:selectAll", false),
-            await sep(),
+            await separator(),
             await item("Clear Buffer", "editor:clearBuffer", false),
             await item("Find", "editor:search", false),
-            await sep(),
+            await separator(),
             await item("Settings…", "window:preferences", false),
         ],
     });
@@ -196,7 +205,7 @@ export async function popupTitleMenu(x: number, y: number) {
             await item("Open Settings", "window:preferences", false),
             await item("Open Keybindings", "window:keybindings", false),
             await item("Change Theme…", "window:themes", false),
-            await sep(),
+            await separator(),
             await item("Inspect Element", "window:devtools", false),
         ],
     });

@@ -44,6 +44,8 @@ jobs:
             # Line endings differ on Windows checkouts, so check formatting once.
             - run: pnpm format:check
               if: runner.os == 'Linux'
+            - run: pnpm lint
+              if: runner.os == 'Linux'
             # Runs tsc, and gives Tauri the dist/ folder it embeds at compile time.
             - run: pnpm build
 

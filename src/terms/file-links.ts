@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { IBufferLine, ILink, ILinkProvider, Terminal } from "@xterm/xterm";
+
 import { isMac } from "../config/keymaps";
+
+import type { IBufferLine, ILink, ILinkProvider, Terminal } from "@xterm/xterm";
 
 /** Runs of characters that can make up a path. */
 const TOKEN = /[^\s"'`<>|()[\]{}]+/g;
@@ -9,15 +11,14 @@ const LINE_SUFFIX = /(:\d+){1,2}$/;
 const TRAILING = /[.,;:!?]+$/;
 
 /** Cmd+Click on macOS, Ctrl+Click elsewhere, like VS Code. */
-const modifierHeld = (e: MouseEvent) => (isMac ? e.metaKey : e.ctrlKey);
+const modifierHeld = (event: MouseEvent) => (isMac ? event.metaKey : event.ctrlKey);
 
 /** A path-looking token: has a separator, or is a name with an extension. */
 function candidate(token: string): string | undefined {
     if (token.includes("://")) return undefined;
     const path = token.replace(TRAILING, "").replace(LINE_SUFFIX, "");
     if (!path || path === "." || path === "..") return undefined;
-    if (/[\\/]/.test(path) || path === "~" || /^[\w.-]*\w\.\w+$/.test(path)) return path;
-    return undefined;
+    return path === "~" || /[\\/]/.test(path) || /^[\w.-]*\w\.\w+$/.test(path) ? path : undefined;
 }
 
 /** The line's text, and the cell column each character starts at. */
@@ -28,7 +29,7 @@ function lineText(line: IBufferLine, cols: number) {
         const chars = line.getCell(x)?.getChars() ?? "";
         // The second cell of a wide character is empty.
         if (!chars && line.getCell(x)?.getWidth() === 0) continue;
-        for (let i = 0; i < (chars || " ").length; i++) columns.push(x);
+        for (let index = 0; index < (chars || " ").length; index++) columns.push(x);
         text += chars || " ";
     }
     return { text, columns };
@@ -58,20 +59,20 @@ export function fileLinkProvider(
                 const shown = m[0].replace(TRAILING, "");
                 found.push({ path, start, end: m.index + shown.length - 1 });
             }
-            if (!found.length) return callback(undefined);
+            if (found.length === 0) return callback(undefined);
 
             void cwd()
-                .then((dir) =>
+                .then((directory: string | null = null) =>
                     invoke<(string | null)[]>("path_links", {
-                        cwd: dir ?? null,
+                        cwd: directory,
                         paths: found.map((f) => f.path),
                     }),
                 )
                 .then((resolved) => {
                     const links: ILink[] = [];
-                    found.forEach((f, i) => {
-                        const target = resolved[i];
-                        if (!target) return;
+                    for (const [index, f] of found.entries()) {
+                        const target = resolved[index];
+                        if (!target) continue;
                         links.push({
                             range: {
                                 start: { x: columns[f.start] + 1, y },
@@ -80,13 +81,13 @@ export function fileLinkProvider(
                             text: target,
                             activate(event) {
                                 if (!modifierHeld(event)) return;
-                                invoke("open_path", { path: target }).catch((e) =>
-                                    onError(String(e)),
+                                invoke("open_path", { path: target }).catch((error) =>
+                                    onError(String(error)),
                                 );
                             },
                         });
-                    });
-                    callback(links.length ? links : undefined);
+                    }
+                    callback(links.length > 0 ? links : undefined);
                 })
                 .catch(() => callback(undefined));
         },

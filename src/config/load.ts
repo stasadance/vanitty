@@ -1,17 +1,19 @@
 import { invoke } from "@tauri-apps/api/core";
-import { applyEdits, modify, parse, printParseErrorCode, type ParseError } from "jsonc-parser";
-import { applyThemes } from "../themes";
-import { vanittyThemes } from "../themes/vanitty";
+import { applyEdits, modify, parse, type ParseError, printParseErrorCode } from "jsonc-parser";
+
 import {
+    type Config,
     DEFAULT_CONFIG,
     KEYBINDINGS_TEMPLATE,
-    SETTINGS_TEMPLATE,
-    type Config,
     type Profile,
+    SETTINGS_TEMPLATE,
 } from "./defaults";
+import { importHyperConfig } from "./hyper";
 import { buildKeymap, type Keybinding } from "./keymaps";
 import { keybindingsSchema, SETTINGS_SCHEMA } from "./schema";
-import { importHyperConfig } from "./hyper";
+
+import { applyThemes } from "../themes";
+import { vanittyThemes } from "../themes/vanitty";
 
 export const SETTINGS = "settings.json";
 
@@ -79,7 +81,8 @@ async function withDetectedShells(profiles: Profile[]): Promise<Profile[]> {
                 p.name.toLowerCase() === s.name.toLowerCase() ||
                 p.config?.shell?.toLowerCase() === s.shell.toLowerCase(),
         );
-    const extra = (await detected)
+    const detectedShells = await detected;
+    const extra = detectedShells
         .filter((s) => !taken(s))
         .map((s) => ({ name: s.name, config: { shell: s.shell, shellArgs: s.shellArgs } }));
     return [...profiles, ...extra];
@@ -88,7 +91,7 @@ async function withDetectedShells(profiles: Profile[]): Promise<Profile[]> {
 function parseJsonc<T>(name: string, text: string, errors: string[]): T | undefined {
     const problems: ParseError[] = [];
     const value = parse(text, problems, { allowTrailingComma: true });
-    if (problems.length) {
+    if (problems.length > 0) {
         const p = problems[0];
         const line = text.slice(0, p.offset).split("\n").length;
         errors.push(
@@ -99,7 +102,7 @@ function parseJsonc<T>(name: string, text: string, errors: string[]): T | undefi
     return value as T;
 }
 
-let lastGood: { settings?: Record<string, unknown>; keybindings?: Keybinding[] } = {};
+const lastGood: { settings?: Record<string, unknown>; keybindings?: Keybinding[] } = {};
 
 /**
  * First run: imports an existing Hyper config if there is one, otherwise
@@ -110,8 +113,8 @@ export async function ensureConfigFiles(commands: string[]): Promise<string[]> {
     await write("settings.schema.json", JSON.stringify(SETTINGS_SCHEMA, null, 2));
     await write("keybindings.schema.json", JSON.stringify(keybindingsSchema(commands), null, 2));
     if ((await read(SETTINGS)) === null) {
-        const imported = await importHyperConfig().catch((e) => {
-            notes.push(`Couldn't import your Hyper config: ${e}`);
+        const imported = await importHyperConfig().catch((error) => {
+            notes.push(`Couldn't import your Hyper config: ${error}`);
             return null;
         });
         if (imported) {
@@ -129,8 +132,8 @@ export async function ensureConfigFiles(commands: string[]): Promise<string[]> {
 export async function loadConfig(): Promise<Loaded> {
     const errors: string[] = [];
 
-    const settingsText = await read(SETTINGS).catch((e) => {
-        errors.push(String(e));
+    const settingsText = await read(SETTINGS).catch((error) => {
+        errors.push(String(error));
         return null;
     });
     let settings = settingsText
@@ -142,10 +145,12 @@ export async function loadConfig(): Promise<Loaded> {
     const keysText = await read(KEYBINDINGS).catch(() => null);
     let keybindings = keysText ? parseJsonc<Keybinding[]>(KEYBINDINGS, keysText, errors) : [];
     if (keybindings === undefined) keybindings = lastGood.keybindings ?? [];
-    else if (!Array.isArray(keybindings)) {
+    else if (Array.isArray(keybindings)) {
+        lastGood.keybindings = keybindings;
+    } else {
         errors.push(`${KEYBINDINGS} must be a list of { "key", "command" } entries.`);
         keybindings = lastGood.keybindings ?? [];
-    } else lastGood.keybindings = keybindings;
+    }
 
     const { $schema: _, ...userConfig } = settings;
     let config: Config = {
@@ -157,11 +162,11 @@ export async function loadConfig(): Promise<Loaded> {
             ...(userConfig.modifierKeys as object | undefined),
         },
     } as Config;
-    if (!Array.isArray(config.profiles) || !config.profiles.length)
+    if (!Array.isArray(config.profiles) || config.profiles.length === 0)
         config.profiles = DEFAULT_CONFIG.profiles;
     // Before the default check, so defaultProfile can name a detected shell.
     config.profiles = await withDetectedShells(config.profiles);
-    if (!config.profiles.some((p) => p.name === config.defaultProfile))
+    if (config.profiles.every((p) => p.name !== config.defaultProfile))
         config.defaultProfile = config.profiles[0].name;
 
     // A Vanitty theme is plain data: apply its looks before any Hyper themes.
@@ -170,9 +175,7 @@ export async function loadConfig(): Promise<Loaded> {
         const found = await vanittyThemes();
         errors.push(...found.errors);
         const theme = found.themes.find((t) => t.id === config.colorTheme);
-        if (!theme) {
-            errors.push(`Theme "${config.colorTheme}" not found. Pick one with Change Theme….`);
-        } else {
+        if (theme) {
             const looks = themeChanges(theme.settings);
             for (const key of Object.keys(looks)) themeSet.add(key);
             config = {
@@ -180,13 +183,15 @@ export async function loadConfig(): Promise<Loaded> {
                 ...looks,
                 colors: { ...config.colors, ...(looks.colors as object | undefined) },
             } as Config;
+        } else {
+            errors.push(`Theme "${config.colorTheme}" not found. Pick one with Change Theme….`);
         }
     }
 
     const themes = Array.isArray(config.themes)
         ? config.themes.filter((t) => typeof t === "string" && t.trim())
         : [];
-    if (themes.length) {
+    if (themes.length > 0) {
         // Some themes only fill in colors the user hasn't set (`config.x || themeX`).
         // Hyper passed its defaults along, so those themes never applied; leave
         // unset colors out so they do.
@@ -223,7 +228,7 @@ export async function saveTheme(choice: { colorTheme?: string; themes?: string[]
     let text = (await read(SETTINGS)) ?? SETTINGS_TEMPLATE;
     const problems: ParseError[] = [];
     parse(text, problems, { allowTrailingComma: true });
-    if (problems.length) throw new Error(`Fix ${SETTINGS} first: it has a syntax error.`);
+    if (problems.length > 0) throw new Error(`Fix ${SETTINGS} first: it has a syntax error.`);
     const formattingOptions = { insertSpaces: true, tabSize: 2 };
     text = applyEdits(
         text,

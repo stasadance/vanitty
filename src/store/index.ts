@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { DEFAULT_CONFIG, type Config } from "../config/defaults";
+
+import { type Config, DEFAULT_CONFIG } from "../config/defaults";
 import { buildKeymap } from "../config/keymaps";
 
 export type Direction = "horizontal" | "vertical";
@@ -109,6 +110,5 @@ export function groupOfSession(groups: Record<string, TermGroup>, sessionUid: st
 export function sessionsIn(groups: Record<string, TermGroup>, uid: string): string[] {
     const g = groups[uid];
     if (!g) return [];
-    if (g.sessionUid) return [g.sessionUid];
-    return g.children.flatMap((c) => sessionsIn(groups, c));
+    return g.sessionUid ? [g.sessionUid] : g.children.flatMap((c) => sessionsIn(groups, c));
 }

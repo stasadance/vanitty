@@ -1,38 +1,42 @@
 import { useEffect, useRef } from "react";
+
+import { SearchBox } from "./search-box";
+import { SplitPane } from "./split-pane";
+
 import { profileConfig, resizeGroup, setActiveSession, setSearch } from "../actions";
 import { isMac, uiScale } from "../config/keymaps";
 import { popupContextMenu } from "../menu";
-import { terms } from "../terms/registry";
 import { useStore } from "../store";
-import { SearchBox } from "./SearchBox";
-import { SplitPane } from "./SplitPane";
+import { terms } from "../terms/registry";
 
-export function Terms() {
+export const Terms = () => {
     const tabs = useStore((s) => s.tabs);
     const activeRoot = useStore((s) => s.activeRoot);
     // Linux and Windows draw a title bar row, plus a tab row once there are tabs.
-    const shifted = !isMac && tabs.length > 1;
-    const top = (isMac ? 34 : shifted ? 68 : 34) * uiScale;
+    const isShifted = !isMac && tabs.length > 1;
+    const top = (isShifted ? 68 : 34) * uiScale;
     return (
         <div
-            className={`terms_terms ${shifted ? "terms_termsShifted" : "terms_termsNotShifted"}`}
+            className={`terms_terms ${isShifted ? "terms_termsShifted" : "terms_termsNotShifted"}`}
             style={{ marginTop: top }}
         >
             {/* Stable order, not tab order: dragging tabs must not move a
                 terminal in the DOM, which can leave its WebGL canvas blank. */}
-            {[...tabs].sort().map((root) => (
-                <div
-                    key={root}
-                    className={`terms_termGroup ${root === activeRoot ? "terms_termGroupActive" : ""}`}
-                >
-                    <GroupView uid={root} />
-                </div>
-            ))}
+            {[...tabs]
+                .sort((a, b) => a.localeCompare(b))
+                .map((root) => (
+                    <div
+                        key={root}
+                        className={`terms_termGroup ${root === activeRoot ? "terms_termGroupActive" : ""}`}
+                    >
+                        <GroupView uid={root} />
+                    </div>
+                ))}
         </div>
     );
-}
+};
 
-function GroupView({ uid }: { uid: string }) {
+const GroupView = ({ uid }: { uid: string }) => {
     const group = useStore((s) => s.groups[uid]);
     const borderColor = useStore((s) => s.config.borderColor);
     if (!group) return null;
@@ -49,9 +53,9 @@ function GroupView({ uid }: { uid: string }) {
             ))}
         </SplitPane>
     );
-}
+};
 
-function TermView({ sessionUid }: { sessionUid: string }) {
+const TermView = ({ sessionUid }: { sessionUid: string }) => {
     const wrapper = useRef<HTMLDivElement>(null);
     const session = useStore((s) => s.sessions[sessionUid]);
     const isActive = useStore(
@@ -60,12 +64,12 @@ function TermView({ sessionUid }: { sessionUid: string }) {
     const config = useStore((s) => s.config);
 
     useEffect(() => {
-        const el = wrapper.current;
+        const element = wrapper.current;
         const term = terms.get(sessionUid);
-        if (!el || !term) return;
-        term.attach(el);
+        if (!element || !term) return;
+        term.attach(element);
         const observer = new ResizeObserver(() => term.scheduleFit());
-        observer.observe(el);
+        observer.observe(element);
         return () => observer.disconnect();
     }, [sessionUid]);
 
@@ -77,9 +81,9 @@ function TermView({ sessionUid }: { sessionUid: string }) {
         <div
             className={`term_fit ${isActive ? "term_active" : ""}`}
             onMouseDown={() => setActiveSession(sessionUid)}
-            onContextMenu={(e) => {
-                e.preventDefault();
-                if (!c.quickEdit) void popupContextMenu(e.clientX, e.clientY);
+            onContextMenu={(event) => {
+                event.preventDefault();
+                if (!c.quickEdit) void popupContextMenu(event.clientX, event.clientY);
             }}
         >
             <div ref={wrapper} className="term_fit term_wrapper" />
@@ -99,4 +103,4 @@ function TermView({ sessionUid }: { sessionUid: string }) {
             )}
         </div>
     );
-}
+};

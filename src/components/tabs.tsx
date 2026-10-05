@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+
+import { ChevronDown, CloseTab } from "./icons";
+
 import { closeTab, reorderTab, selectTab } from "../actions";
 import { isMac } from "../config/keymaps";
 import { getState, useStore } from "../store";
-import { ChevronDown, CloseTab } from "./icons";
 
-interface Props {
+interface Properties {
     titles: string[];
     activeIndex: number;
     onNewTab: (profile?: string) => void;
@@ -13,42 +15,45 @@ interface Props {
 /** How far the pointer moves before a press on a tab becomes a drag. */
 const DRAG_THRESHOLD = 4;
 
-export function Tabs({ titles, activeIndex, onNewTab }: Props) {
+export const Tabs = ({ titles, activeIndex, onNewTab }: Properties) => {
     const tabs = useStore((s) => s.tabs);
-    const listRef = useRef<HTMLUListElement>(null);
+    const listReference = useRef<HTMLUListElement>(null);
     const [dragging, setDragging] = useState<string | null>(null);
     const sessions = useStore((s) => s.sessions);
     const groups = useStore((s) => s.groups);
     const borderColor = useStore((s) => s.config.borderColor);
     const fullScreen = useStore((s) => s.fullScreen);
-    const hide = !isMac && tabs.length === 1;
+    const isHidden = !isMac && tabs.length === 1;
 
     const hasActivity = (root: string) => {
         const walk = (uid: string): boolean => {
             const g = groups[uid];
             if (!g) return false;
-            if (g.sessionUid) return !!sessions[g.sessionUid]?.hasActivity;
-            return g.children.some(walk);
+            return g.sessionUid
+                ? !!sessions[g.sessionUid]?.hasActivity
+                : g.children.some((child) => walk(child));
         };
         return walk(root);
     };
 
     /** Drags a tab along the bar; it takes the place of the tab under the pointer. */
-    const startDrag = (e: React.MouseEvent, root: string) => {
-        if (e.button !== 0) return;
-        const startX = e.clientX;
-        let moved = false;
-        const move = (ev: MouseEvent) => {
-            if (!moved && Math.abs(ev.clientX - startX) < DRAG_THRESHOLD) return;
-            if (!moved) {
+    const startDrag = (event: React.MouseEvent, root: string) => {
+        if (event.button !== 0) return;
+        const startX = event.clientX;
+        let isMoved = false;
+        const move = (moveEvent: MouseEvent) => {
+            if (!isMoved && Math.abs(moveEvent.clientX - startX) < DRAG_THRESHOLD) return;
+            if (!isMoved) {
                 // The tab you drag becomes the active one, as in browsers.
-                moved = true;
+                isMoved = true;
                 setDragging(root);
                 selectTab(root);
             }
-            const items = [...(listRef.current?.children ?? [])];
-            const over = items.findIndex((el) => ev.clientX < el.getBoundingClientRect().right);
-            reorderTab(root, over < 0 ? items.length - 1 : over);
+            const items = [...(listReference.current?.children ?? [])];
+            const over = items.findIndex(
+                (element) => moveEvent.clientX < element.getBoundingClientRect().right,
+            );
+            reorderTab(root, over === -1 ? items.length - 1 : over);
         };
         const up = () => {
             window.removeEventListener("mousemove", move);
@@ -61,7 +66,7 @@ export function Tabs({ titles, activeIndex, onNewTab }: Props) {
 
     return (
         <nav
-            className={`tabs_nav ${hide ? "tabs_hiddenNav" : ""} ${isMac ? "" : "tabs_navShifted"}`}
+            className={`tabs_nav ${isHidden ? "tabs_hiddenNav" : ""} ${isMac ? "" : "tabs_navShifted"}`}
             data-tauri-drag-region={isMac ? true : undefined}
         >
             {tabs.length === 1 && isMac && (
@@ -72,12 +77,12 @@ export function Tabs({ titles, activeIndex, onNewTab }: Props) {
             {tabs.length > 1 && (
                 <>
                     <ul
-                        ref={listRef}
+                        ref={listReference}
                         className={`tabs_list ${isMac ? "tabs_listMac" : ""} ${fullScreen && isMac ? "tabs_fullScreen" : ""}`}
                     >
-                        {tabs.map((root, i) => {
-                            const isActive = i === activeIndex;
-                            const isFirst = i === 0;
+                        {tabs.map((root, index) => {
+                            const isActive = index === activeIndex;
+                            const isFirst = index === 0;
                             const activity = !isActive && hasActivity(root);
                             return (
                                 <li
@@ -88,17 +93,17 @@ export function Tabs({ titles, activeIndex, onNewTab }: Props) {
                                     } ${activity ? "tab_hasActivity" : ""} ${dragging === root ? "tab_dragging" : ""}`}
                                 >
                                     <span
-                                        className={`tab_text ${i === tabs.length - 1 ? "tab_textLast" : ""} ${isActive ? "tab_textActive" : ""}`}
-                                        onMouseDown={(e) => startDrag(e, root)}
-                                        onClick={(e) => {
-                                            if (e.button === 0 && !isActive) selectTab(root);
+                                        className={`tab_text ${index === tabs.length - 1 ? "tab_textLast" : ""} ${isActive ? "tab_textActive" : ""}`}
+                                        onMouseDown={(event) => startDrag(event, root)}
+                                        onClick={(event) => {
+                                            if (!isActive && event.button === 0) selectTab(root);
                                         }}
-                                        onMouseUp={(e) => {
-                                            if (e.button === 1) closeTab(root);
+                                        onMouseUp={(event) => {
+                                            if (event.button === 1) closeTab(root);
                                         }}
                                     >
-                                        <span title={titles[i]} className="tab_textInner">
-                                            {titles[i]}
+                                        <span title={titles[index]} className="tab_textInner">
+                                            {titles[index]}
                                         </span>
                                     </span>
                                     <i className="tab_icon" onClick={() => closeTab(root)}>
@@ -119,17 +124,17 @@ export function Tabs({ titles, activeIndex, onNewTab }: Props) {
             <NewTabButton tabsVisible={tabs.length > 1} onNewTab={onNewTab} />
         </nav>
     );
-}
+};
 
-function NewTabButton({
+const NewTabButton = ({
     tabsVisible,
     onNewTab,
 }: {
     tabsVisible: boolean;
     onNewTab: (p?: string) => void;
-}) {
+}) => {
     const [open, setOpen] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
+    const reference = useRef<HTMLDivElement>(null);
     const profiles = useStore((s) => s.config.profiles);
     const defaultProfile = useStore((s) => s.config.defaultProfile);
     const borderColor = useStore((s) => s.config.borderColor);
@@ -137,8 +142,8 @@ function NewTabButton({
 
     useEffect(() => {
         if (!open) return;
-        const away = (e: MouseEvent) => {
-            if (!ref.current?.contains(e.target as Node)) setOpen(false);
+        const away = (event: MouseEvent) => {
+            if (!reference.current?.contains(event.target as Node)) setOpen(false);
         };
         window.addEventListener("mousedown", away);
         return () => window.removeEventListener("mousedown", away);
@@ -146,7 +151,7 @@ function NewTabButton({
 
     return (
         <div
-            ref={ref}
+            ref={reference}
             title="New Tab"
             className={`new_tab ${tabsVisible ? "tabs_visible" : "tabs_hidden"}`}
             style={{ borderColor: tabsVisible ? borderColor : undefined }}
@@ -154,7 +159,7 @@ function NewTabButton({
                 if (getState().config.profiles.length > 1) setOpen(!open);
                 else onNewTab();
             }}
-            onDoubleClick={(e) => e.stopPropagation()}
+            onDoubleClick={(event) => event.stopPropagation()}
         >
             <ChevronDown />
             {open && (
@@ -164,8 +169,8 @@ function NewTabButton({
                             key={p.name}
                             style={{ borderBottomColor: borderColor }}
                             className={`profile_dropdown_item ${p.name === defaultProfile && profiles.length > 1 ? "profile_dropdown_item_default" : ""}`}
-                            onClick={(e) => {
-                                e.stopPropagation();
+                            onClick={(event) => {
+                                event.stopPropagation();
                                 setOpen(false);
                                 onNewTab(p.name);
                             }}
@@ -177,4 +182,4 @@ function NewTabButton({
             )}
         </div>
     );
-}
+};

@@ -23,7 +23,7 @@ The frontend (React 19, Zustand, xterm.js) is in `src/`. The Rust side (PTY, con
 
 ## Before opening a pull request
 
-Run `just check` and make sure it passes. It runs the same typecheck, format, clippy and test steps as CI. `just format` fixes formatting.
+Run `just check` and make sure it passes. It runs the same typecheck, lint, format, clippy and test steps as CI. `just format` fixes formatting, and `pnpm lint --fix` fixes most lint errors.
 
 Then try your change in `just dev`. Say in the pull request which OS you tested on.
 

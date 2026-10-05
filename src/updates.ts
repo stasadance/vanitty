@@ -1,24 +1,27 @@
 import { invoke } from "@tauri-apps/api/core";
+
 import { saveNow } from "./persist";
 import { getState, notify } from "./store";
 
 const FIRST_CHECK = 10_000;
 const CHECK_EVERY = 6 * 60 * 60 * 1000;
 
-let shown = false;
+let isShown = false;
 
 async function check() {
-    if (shown || getState().config.disableAutoUpdates) return;
+    if (isShown || getState().config.disableAutoUpdates) return;
     // Offline or rate limited: try again on the next round, without a notice.
     const version = await invoke<string | null>("update_check").catch(() => null);
-    if (!version || shown) return;
-    shown = true;
+    if (!version || isShown) return;
+    isShown = true;
     notify(`Vanitty ${version} is ready.`, false, {
         label: "Restart to update",
         run: async () => {
             // Save this window first so the restart reopens it as it is now.
             await saveNow();
-            await invoke("update_install").catch((e) => notify(`Update failed: ${e}`, true));
+            await invoke("update_install").catch((error) =>
+                notify(`Update failed: ${error}`, true),
+            );
         },
     });
 }

@@ -1,22 +1,24 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import type { Config, TermConfig } from "./config/defaults";
-import { emit, wants } from "./plugins/host";
+
 import { markDirty } from "./persist";
-import { ptyCwd } from "./terms/pty";
-import { terms } from "./terms/registry";
-import { TermSession } from "./terms/session";
+import { emit, wants } from "./plugins/host";
 import {
     activeSessionUid,
+    type Direction,
     getState,
     groupOfSession,
     rootOf,
     sessionsIn,
     setState,
-    uid,
-    type Direction,
     type State,
     type TermGroup,
+    uid,
 } from "./store";
+import { ptyCwd } from "./terms/pty";
+import { terms } from "./terms/registry";
+import { TermSession } from "./terms/session";
+
+import type { Config, TermConfig } from "./config/defaults";
 
 const MIN_SIZE = 0.05;
 
@@ -61,7 +63,7 @@ export async function newSession(
     const activePty = active ? terms.get(active)?.ptyId : undefined;
     if (restored) {
         cwd = restored.cwd || cwd;
-    } else if (s.config.preserveCWD && activePty !== undefined) {
+    } else if (activePty !== undefined && s.config.preserveCWD) {
         cwd = (await ptyCwd(activePty).catch(() => null)) || cwd;
     }
 
@@ -127,9 +129,10 @@ export async function newSession(
 
 function updateSession(sessionUid: string, patch: Partial<State["sessions"][string]>) {
     setState((st) => {
-        const cur = st.sessions[sessionUid];
-        if (!cur) return {};
-        return { sessions: { ...st.sessions, [sessionUid]: { ...cur, ...patch } } };
+        const current = st.sessions[sessionUid];
+        return current
+            ? { sessions: { ...st.sessions, [sessionUid]: { ...current, ...patch } } }
+            : {};
     });
 }
 
@@ -237,13 +240,7 @@ function removeSession(sessionUid: string) {
         const activeSessions = { ...st.activeSessions };
         delete groups[group.uid];
 
-        if (!group.parentUid) {
-            // The whole tab is gone.
-            const i = tabs.indexOf(group.uid);
-            tabs = tabs.filter((t) => t !== group.uid);
-            delete activeSessions[group.uid];
-            if (activeRoot === group.uid) activeRoot = tabs[Math.min(i, tabs.length - 1)] ?? null;
-        } else {
+        if (group.parentUid) {
             const parent = groups[group.parentUid];
             const index = parent.children.indexOf(group.uid);
             const children = parent.children.filter((c) => c !== group.uid);
@@ -268,7 +265,7 @@ function removeSession(sessionUid: string) {
                 let sizes = parent.sizes;
                 if (sizes) {
                     const extra = sizes[index] / (sizes.length - 1);
-                    sizes = sizes.filter((_, i) => i !== index).map((x) => x + extra);
+                    sizes = sizes.filter((_, position) => position !== index).map((x) => x + extra);
                 }
                 groups[parent.uid] = { ...parent, children, sizes };
             }
@@ -277,6 +274,13 @@ function removeSession(sessionUid: string) {
                 const remaining = sessionsIn(groups, newRoot);
                 activeSessions[newRoot] = remaining[Math.min(index, remaining.length - 1)];
             }
+        } else {
+            // The whole tab is gone.
+            const index = tabs.indexOf(group.uid);
+            tabs = tabs.filter((t) => t !== group.uid);
+            delete activeSessions[group.uid];
+            if (activeRoot === group.uid)
+                activeRoot = tabs[Math.min(index, tabs.length - 1)] ?? null;
         }
         return { groups, sessions, tabs, activeRoot, activeSessions };
     });
@@ -315,7 +319,7 @@ export function selectTab(rootUid: string) {
 function clearActivity(rootUid: string) {
     const st = getState();
     const marked = sessionsIn(st.groups, rootUid).filter((s) => st.sessions[s]?.hasActivity);
-    if (!marked.length) return;
+    if (marked.length === 0) return;
     const sessions = { ...st.sessions };
     for (const s of marked) sessions[s] = { ...sessions[s], hasActivity: false };
     setState({ sessions });
@@ -323,16 +327,16 @@ function clearActivity(rootUid: string) {
 
 export function moveTab(delta: number) {
     const { tabs, activeRoot } = getState();
-    if (tabs.length < 2 || !activeRoot) return;
-    const i = tabs.indexOf(activeRoot);
-    selectTab(tabs[(i + delta + tabs.length) % tabs.length]);
+    if (!activeRoot || tabs.length < 2) return;
+    const index = tabs.indexOf(activeRoot);
+    selectTab(tabs[(index + delta + tabs.length) % tabs.length]);
 }
 
 /** Moves a tab to `index` in the tab bar. */
 export function reorderTab(rootUid: string, index: number) {
     setState((st) => {
         const from = st.tabs.indexOf(rootUid);
-        if (from < 0 || from === index) return {};
+        if (from === -1 || from === index) return {};
         const tabs = st.tabs.filter((t) => t !== rootUid);
         tabs.splice(index, 0, rootUid);
         return { tabs };
@@ -350,8 +354,8 @@ export function movePane(delta: number) {
     if (!st.activeRoot) return;
     const all = sessionsIn(st.groups, st.activeRoot);
     if (all.length < 2) return;
-    const i = all.indexOf(st.activeSessions[st.activeRoot]);
-    const next = all[(i + delta + all.length) % all.length];
+    const index = all.indexOf(st.activeSessions[st.activeRoot]);
+    const next = all[(index + delta + all.length) % all.length];
     setActiveSession(next);
     focusActive();
 }
@@ -377,10 +381,9 @@ export function activeTerm(): TermSession | undefined {
 export function setSearch(sessionUid: string | undefined, open: boolean) {
     if (!sessionUid) return;
     updateSession(sessionUid, { search: open, searchResults: undefined });
-    if (!open) {
-        terms.get(sessionUid)?.searchClear();
-        focusActive();
-    }
+    if (open) return;
+    terms.get(sessionUid)?.searchClear();
+    focusActive();
 }
 
 export function setFontSizeOverride(value: number | null) {

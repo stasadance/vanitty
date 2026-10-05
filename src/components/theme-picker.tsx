@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
+
 import { invoke } from "@tauri-apps/api/core";
+
 import { focusActive } from "../actions";
 import { saveTheme } from "../config/load";
+import { notify, setState, useStore } from "../store";
 import { themeName } from "../themes";
 import { CURATED_THEMES } from "../themes/curated";
 import { vanittyThemes } from "../themes/vanitty";
-import { notify, setState, useStore } from "../store";
 
 interface Listing {
     name: string;
@@ -31,9 +33,9 @@ interface Item {
 let npmThemes: Promise<Listing[]> | undefined;
 
 function loadNpmThemes() {
-    npmThemes ??= invoke<Listing[]>("themes_list").catch((e) => {
+    npmThemes ??= invoke<Listing[]>("themes_list").catch((error) => {
         npmThemes = undefined;
-        throw e;
+        throw error;
     });
     return npmThemes;
 }
@@ -44,14 +46,14 @@ function close() {
 }
 
 function shortCount(n: number) {
-    return n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : String(n);
+    return n >= 1000 ? `${(n / 1000).toFixed(n >= 10_000 ? 0 : 1)}k` : String(n);
 }
 
 /**
  * Picks a theme: Vanitty's built-in and your own JSON themes, reviewed Hyper
  * themes pinned to checked versions, then any other Hyper theme on npm.
  */
-export function ThemePicker() {
+export const ThemePicker = () => {
     const config = useStore((s) => s.config);
     const [vanitty, setVanitty] = useState<Item[]>([]);
     const [npm, setNpm] = useState<Listing[] | null>(null);
@@ -60,7 +62,7 @@ export function ThemePicker() {
     const [selected, setSelected] = useState(0);
     const list = useRef<HTMLUListElement>(null);
 
-    const hyperCurrent = new Set(config.themes.map(themeName));
+    const hyperCurrent = new Set(config.themes.map((theme) => themeName(theme)));
 
     useEffect(() => {
         void vanittyThemes().then(({ themes }) =>
@@ -80,12 +82,12 @@ export function ThemePicker() {
         );
         loadNpmThemes()
             .then(setNpm)
-            .catch((e) => setError(`Couldn't load more themes from npm: ${e}`));
+            .catch((loadError) => setError(`Couldn't load more themes from npm: ${loadError}`));
     }, []);
 
     useEffect(() => {
         list.current
-            ?.querySelector(`[data-index="${selected}"]`)
+            ?.querySelector(`[data-index="${CSS.escape(String(selected))}"]`)
             ?.scrollIntoView({ block: "nearest" });
     }, [selected]);
 
@@ -134,7 +136,7 @@ export function ThemePicker() {
 
     const pick = (t: Item) => {
         close();
-        saveTheme(t.choice).catch((e) => notify(String(e), true));
+        saveTheme(t.choice).catch((saveError) => notify(String(saveError), true));
     };
 
     return (
@@ -146,7 +148,7 @@ export function ThemePicker() {
                     color: config.foregroundColor,
                     borderColor: config.borderColor,
                 }}
-                onMouseDown={(e) => e.stopPropagation()}
+                onMouseDown={(event) => event.stopPropagation()}
             >
                 <input
                     autoFocus
@@ -154,39 +156,49 @@ export function ThemePicker() {
                     style={{ borderColor: config.borderColor }}
                     placeholder="Search themes"
                     value={query}
-                    onChange={(e) => {
-                        setQuery(e.target.value);
+                    onChange={(event) => {
+                        setQuery(event.target.value);
                         setSelected(0);
                     }}
-                    onKeyDown={(e) => {
-                        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-                            e.preventDefault();
-                            const step = e.key === "ArrowDown" ? 1 : -1;
-                            setSelected((i) => Math.max(0, Math.min(items.length - 1, i + step)));
-                        } else if (e.key === "Enter") {
-                            e.preventDefault();
-                            if (items[selected]) pick(items[selected]);
-                        } else if (e.key === "Escape") {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            close();
+                    onKeyDown={(event) => {
+                        switch (event.key) {
+                            case "ArrowDown":
+                            case "ArrowUp": {
+                                event.preventDefault();
+                                const step = event.key === "ArrowDown" ? 1 : -1;
+                                setSelected((index) =>
+                                    Math.max(0, Math.min(items.length - 1, index + step)),
+                                );
+                                break;
+                            }
+                            case "Enter": {
+                                event.preventDefault();
+                                if (items[selected]) pick(items[selected]);
+                                break;
+                            }
+                            case "Escape": {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                close();
+                                break;
+                            }
                         }
                     }}
                 />
                 <ul ref={list} className="theme_picker_list">
-                    {items.map((t, i) => (
+                    {items.map((t, index) => (
                         <li key={t.key} className="theme_picker_row">
-                            {t.group && t.group !== items[i - 1]?.group && (
+                            {t.group && t.group !== items[index - 1]?.group && (
                                 <div className="theme_picker_group">{t.group}</div>
                             )}
                             <div
-                                data-index={i}
+                                data-index={index}
                                 className="theme_picker_item"
                                 style={{
                                     backgroundColor:
-                                        i === selected ? config.selectionColor : undefined,
+                                        index === selected ? config.selectionColor : undefined,
                                 }}
-                                onMouseMove={() => setSelected(i)}
+                                onMouseMove={() => setSelected(index)}
                                 onClick={() => pick(t)}
                             >
                                 <span className="theme_picker_name">
@@ -218,4 +230,4 @@ export function ThemePicker() {
             </div>
         </div>
     );
-}
+};

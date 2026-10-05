@@ -1,10 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getAllWindows, getCurrentWindow } from "@tauri-apps/api/window";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
+
 import {
     activeTerm,
     closePane,
-    focusActive,
     fontSize,
     jumpTab,
     movePane,
@@ -21,16 +21,17 @@ import { hasPluginCommand, runPluginCommand } from "./plugins/host";
 import { activeSessionUid, getState, notify, setState } from "./store";
 
 /** Return false to let the key through (e.g. Escape with no search open). */
-type Command = (arg?: string) => void | boolean | Promise<unknown>;
+type Command = (argument?: string) => void | boolean | Promise<unknown>;
 
 const send = (data: string) => () => activeTerm()?.write(data);
 
 /** Is focus in one of our own text inputs (not a terminal)? */
 const inInput = () => {
-    const el = document.activeElement;
+    const element = document.activeElement;
     return (
-        el instanceof HTMLInputElement ||
-        (el instanceof HTMLTextAreaElement && !el.classList.contains("xterm-helper-textarea"))
+        element instanceof HTMLInputElement ||
+        (element instanceof HTMLTextAreaElement &&
+            !element.classList.contains("xterm-helper-textarea"))
     );
 };
 
@@ -69,7 +70,8 @@ export const COMMANDS: Record<string, Command> = {
     "app:quit": async () => {
         // Keep every window for the next launch, not just the last one closed.
         await invoke("session_quitting").catch(() => {});
-        for (const w of await getAllWindows()) await w.close();
+        const windows = await getAllWindows();
+        for (const w of windows) await w.close();
     },
     "app:importHyper": async () => {
         const imported = await importHyperConfig();
@@ -128,21 +130,21 @@ export const COMMANDS: Record<string, Command> = {
         if (!s || !getState().sessions[s]?.search) return false;
         setSearch(s, false);
     },
-    "editor:movePreviousWord": send("\x1bb"),
-    "editor:moveNextWord": send("\x1bf"),
-    "editor:moveBeginningLine": send("\x1bOH"),
-    "editor:moveEndLine": send("\x1bOF"),
-    "editor:deletePreviousWord": send("\x1b\x7f"),
-    "editor:deleteNextWord": send("\x1bd"),
-    "editor:deleteBeginningLine": send("\x15"),
-    "editor:deleteEndLine": send("\x0b"),
-    "editor:break": send("\x03"),
-    "editor:stop": send("\x1a"),
-    "editor:quit": send("\x1c"),
-    "editor:tmux": send("\x02"),
+    "editor:movePreviousWord": send("\u{1B}b"),
+    "editor:moveNextWord": send("\u{1B}f"),
+    "editor:moveBeginningLine": send("\u{1B}OH"),
+    "editor:moveEndLine": send("\u{1B}OF"),
+    "editor:deletePreviousWord": send("\u{1B}\u{7F}"),
+    "editor:deleteNextWord": send("\u{1B}d"),
+    "editor:deleteBeginningLine": send("\u{15}"),
+    "editor:deleteEndLine": send("\u{B}"),
+    "editor:break": send("\u{3}"),
+    "editor:stop": send("\u{1A}"),
+    "editor:quit": send("\u{1C}"),
+    "editor:tmux": send("\u{2}"),
 };
 
-for (let i = 1; i <= 8; i++) COMMANDS[`tab:jump:${i}`] = () => jumpTab(i - 1);
+for (let index = 1; index <= 8; index++) COMMANDS[`tab:jump:${index}`] = () => jumpTab(index - 1);
 COMMANDS["tab:jump:last"] = () => jumpTab("last");
 
 export const COMMAND_IDS = Object.keys(COMMANDS);
@@ -150,13 +152,13 @@ export const COMMAND_IDS = Object.keys(COMMANDS);
 const PROFILE_COMMAND = /^(tab:new|pane:splitRight|pane:splitDown|window:new):(.+)$/;
 
 /** Runs a command; "tab:new:<profile>" style ids pass the profile along. */
-export function runCommand(id: string, arg?: string): boolean {
+export function runCommand(id: string, argument?: string): boolean {
     const m = PROFILE_COMMAND.exec(id);
-    const fn = m ? COMMANDS[m[1]] : COMMANDS[id];
-    if (!fn) return hasPluginCommand(id) ? runPluginCommand(id, arg) : false;
-    const result = fn(m?.[2] ?? arg);
+    const handler = COMMANDS[m ? m[1] : id];
+    if (!handler) return hasPluginCommand(id) ? runPluginCommand(id, argument) : false;
+    const result = handler(m?.[2] ?? argument);
     if (result instanceof Promise) {
-        result.catch((e) => notify(`${id} failed: ${e}`, true));
+        result.catch((error) => notify(`${id} failed: ${error}`, true));
         return true;
     }
     return result !== false;
@@ -174,4 +176,6 @@ export function commandAllowedInInput(id: string) {
     );
 }
 
-export { inInput, focusActive };
+export { inInput };
+
+export { focusActive } from "./actions";

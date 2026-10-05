@@ -1,14 +1,16 @@
 import { useEffect } from "react";
+
 import { getCurrentWindow } from "@tauri-apps/api/window";
+
 import { boot } from "./boot";
-import { Header, useTabTitles } from "./components/Header";
-import { Notifications } from "./components/Notifications";
-import { Terms } from "./components/Terms";
-import { ThemePicker } from "./components/ThemePicker";
+import { Header, useTabTitles } from "./components/header";
+import { Notifications } from "./components/notifications";
+import { Terms } from "./components/terms";
+import { ThemePicker } from "./components/theme-picker";
 import { isMac, uiScale } from "./config/keymaps";
 import { useStore } from "./store";
 
-export default function App() {
+export const App = () => {
     const config = useStore((s) => s.config);
     const maximized = useStore((s) => s.maximized);
     const fullScreen = useStore((s) => s.fullScreen);
@@ -26,12 +28,12 @@ export default function App() {
         if (title) void getCurrentWindow().setTitle(title);
     }, [title]);
 
-    const rounded = !isMac && !maximized && !fullScreen && config.borderRadius > 0;
+    const isRounded = !isMac && !maximized && !fullScreen && config.borderRadius > 0;
 
     return (
         <div id="hyper">
             <div
-                className={`hyper_main ${rounded ? "hyper_mainRounded" : ""} ${fullScreen ? "fullScreen" : ""}`}
+                className={`hyper_main ${isRounded ? "hyper_mainRounded" : ""} ${fullScreen ? "fullScreen" : ""}`}
                 style={
                     {
                         fontFamily: config.uiFontFamily,
@@ -51,4 +53,4 @@ export default function App() {
             <style>{`#hyper {\n${config.css ?? ""}\n}\n#hyper .term_term {\n${config.termCSS ?? ""}\n}`}</style>
         </div>
     );
-}
+};

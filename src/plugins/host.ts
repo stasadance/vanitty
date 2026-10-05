@@ -1,7 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
+
 import { platform } from "../config/keymaps";
-import type { InstallResult } from "../themes";
 import { getState, notify, setState, type State } from "../store";
+
+import type { InstallResult } from "../themes";
 import type { HeaderItem, TerminalInfo } from "./api";
 import type { HostToWorker, WorkerToHost } from "./protocol";
 
@@ -9,7 +11,7 @@ import type { HostToWorker, WorkerToHost } from "./protocol";
 const ACTIVATE_TIMEOUT_MS = 10_000;
 
 interface Bridge {
-    runCommand(id: string, arg?: string): boolean;
+    runCommand(id: string, argument?: string): boolean;
     writeToTerminal(text: string, id?: string): void;
 }
 
@@ -31,8 +33,12 @@ class PluginWorker {
             type: "module",
             name: `plugin:${name}`,
         });
-        this.worker.onmessage = (e: MessageEvent<WorkerToHost>) => this.onMessage(e.data);
-        this.worker.onerror = (e) => notify(`Plugin ${name}: ${e.message}`, true);
+        this.worker.addEventListener("message", (event: MessageEvent<WorkerToHost>) =>
+            this.onMessage(event.data),
+        );
+        this.worker.addEventListener("error", (event) =>
+            notify(`Plugin ${name}: ${event.message}`, true),
+        );
         const timer = setTimeout(() => {
             notify(`Plugin ${name} took too long to start and was stopped.`, true);
             this.stop();
@@ -57,13 +63,13 @@ class PluginWorker {
         if (this.subscriptions.has(name)) this.post({ t: "event", name, payload });
     }
 
-    invoke(command: string, arg?: string) {
+    invoke(command: string, argument?: string) {
         const id = this.nextId++;
         return new Promise<unknown>((resolve, reject) => {
             this.pending.set(id, (r) =>
-                r.error !== undefined ? reject(new Error(r.error)) : resolve(r.value),
+                r.error === undefined ? resolve(r.value) : reject(new Error(r.error)),
             );
-            this.post({ t: "invoke", id, command, arg });
+            this.post({ t: "invoke", id, command, arg: argument });
         });
     }
 
@@ -77,73 +83,86 @@ class PluginWorker {
 
     private onMessage(m: WorkerToHost) {
         switch (m.t) {
-            case "ready":
+            case "ready": {
                 this.onReady();
                 break;
-            case "failed":
+            }
+            case "failed": {
                 notify(`Plugin ${this.name} failed to start: ${m.error}`, true);
                 this.stop();
                 break;
-            case "result":
+            }
+            case "result": {
                 this.pending.get(m.id)?.(m);
                 this.pending.delete(m.id);
                 break;
-            case "call":
-                void this.handle(m.method, m.args).then(
-                    (value) => this.post({ t: "result", id: m.id, value }),
-                    (err) =>
+            }
+            case "call": {
+                void this.handle(m.method, m.args)
+                    .then((value) => this.post({ t: "result", id: m.id, value }))
+                    .catch((error) =>
                         this.post({
                             t: "result",
                             id: m.id,
-                            error: String(err instanceof Error ? err.message : err),
+                            error: String(error instanceof Error ? error.message : error),
                         }),
-                );
+                    );
                 break;
+            }
         }
     }
 
-    private async handle(method: string, args: unknown[]): Promise<unknown> {
+    private async handle(method: string, parameters: unknown[]): Promise<unknown> {
         const s = getState();
         switch (method) {
-            case "events.subscribe":
-                this.subscriptions.add(String(args[0]));
+            case "events.subscribe": {
+                this.subscriptions.add(String(parameters[0]));
                 return;
-            case "commands.register":
-                this.commands.add(String(args[0]));
-                pluginCommands.set(String(args[0]), this);
+            }
+            case "commands.register": {
+                this.commands.add(String(parameters[0]));
+                pluginCommands.set(String(parameters[0]), this);
                 return;
-            case "commands.unregister":
-                this.commands.delete(String(args[0]));
-                pluginCommands.delete(String(args[0]));
+            }
+            case "commands.unregister": {
+                this.commands.delete(String(parameters[0]));
+                pluginCommands.delete(String(parameters[0]));
                 return;
-            case "commands.execute":
+            }
+            case "commands.execute": {
                 if (
                     !this.bridge.runCommand(
-                        String(args[0]),
-                        args[1] === undefined ? undefined : String(args[1]),
+                        String(parameters[0]),
+                        parameters[1] === undefined ? undefined : String(parameters[1]),
                     )
                 ) {
-                    throw new Error(`Unknown command ${args[0]}`);
+                    throw new Error(`Unknown command ${parameters[0]}`);
                 }
                 return;
-            case "terminals.list":
+            }
+            case "terminals.list": {
                 return terminalInfos(s);
-            case "terminals.active":
+            }
+            case "terminals.active": {
                 return terminalInfos(s).find((t) => t.active);
-            case "terminals.write":
+            }
+            case "terminals.write": {
                 this.bridge.writeToTerminal(
-                    String(args[0]),
-                    args[1] === undefined ? undefined : String(args[1]),
+                    String(parameters[0]),
+                    parameters[1] === undefined ? undefined : String(parameters[1]),
                 );
                 return;
-            case "config.get":
+            }
+            case "config.get": {
                 return s.config;
-            case "window.notify":
-                notify(`${this.name}: ${args[0]}`, !!args[1]);
+            }
+            case "window.notify": {
+                notify(`${this.name}: ${parameters[0]}`, !!parameters[1]);
                 return;
+            }
             case "ui.setHeaderItem": {
-                const id = String(args[0]);
-                const item = args[1] as HeaderItem | null;
+                const id = String(parameters[0]);
+                const item = parameters[1] as HeaderItem | null;
                 if (item) this.headerItems.add(id);
                 else this.headerItems.delete(id);
                 setHeaderItem(
@@ -154,8 +173,9 @@ class PluginWorker {
                 );
                 return;
             }
-            default:
+            default: {
                 throw new Error(`Unknown method ${method}`);
+            }
         }
     }
 }
@@ -187,10 +207,10 @@ export function hasPluginCommand(id: string) {
     return pluginCommands.has(id);
 }
 
-export function runPluginCommand(id: string, arg?: string) {
+export function runPluginCommand(id: string, argument?: string) {
     const w = pluginCommands.get(id);
     if (!w) return false;
-    w.invoke(id, arg).catch((e) => notify(`${id}: ${e.message}`, true));
+    w.invoke(id, argument).catch((error) => notify(`${id}: ${error.message}`, true));
     return true;
 }
 
@@ -220,9 +240,9 @@ export async function syncPlugins(bridge: Bridge) {
     loadedKey = key;
     for (const w of workers) w.stop();
     workers = [];
-    if (!npm.length && !local.length) return;
+    if (npm.length === 0 && local.length === 0) return;
 
-    if (npm.length) {
+    if (npm.length > 0) {
         const results = await invoke<InstallResult[]>("packages_install", {
             kind: "plugins",
             specs: npm,
@@ -232,9 +252,9 @@ export async function syncPlugins(bridge: Bridge) {
             if (r.error) notify(`Couldn't install plugin ${r.name}: ${r.error}`, true);
     }
     const sources = await invoke<Record<string, string>>("packages_sources", { kind: "plugins" });
-    const names = [...npm.map(packageName), ...local.map((l) => `@local/${l}`)];
+    const names = [...npm.map((spec) => packageName(spec)), ...local.map((l) => `@local/${l}`)];
     for (const name of names) {
-        if (!Object.keys(sources).some((k) => k.startsWith(`${name}/`))) {
+        if (Object.keys(sources).every((k) => !k.startsWith(`${name}/`))) {
             notify(`Plugin ${name} isn't installed.`, true);
             continue;
         }
@@ -243,7 +263,7 @@ export async function syncPlugins(bridge: Bridge) {
 }
 
 function packageName(spec: string) {
-    const s = spec.trim().split("#")[0];
+    const s = spec.trim().split("#", 1)[0];
     const at = s.indexOf("@", s.startsWith("@") ? 1 : 0);
     return at > 0 ? s.slice(0, at) : s;
 }
