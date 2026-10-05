@@ -4,6 +4,7 @@ mod packages;
 mod pty;
 mod session;
 mod shells;
+mod ssh;
 mod updater;
 mod window;
 
@@ -46,6 +47,7 @@ pub fn run() {
             session::session_reopen,
             session::session_quitting,
             shells::shells_detect,
+            ssh::ssh_link,
         ])
         .on_page_load(|webview, payload| {
             if payload.event() == PageLoadEvent::Started {

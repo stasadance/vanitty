@@ -5,6 +5,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { boot } from "./boot";
 import { Header, useTabTitles } from "./components/header";
 import { Notifications } from "./components/notifications";
+import { SshPrompt } from "./components/ssh-prompt";
 import { Terms } from "./components/terms";
 import { ThemePicker } from "./components/theme-picker";
 import { isMac, uiScale } from "./config/keymaps";
@@ -50,6 +51,7 @@ export const App = () => {
                 <Terms />
                 <Notifications />
                 {isThemePicker && <ThemePicker />}
+                <SshPrompt />
             </div>
             <style>{`#hyper {\n${config.css ?? ""}\n}\n#hyper .term_term {\n${config.termCSS ?? ""}\n}`}</style>
         </div>

@@ -42,9 +42,16 @@ export interface RestoredPane extends RestoredScreen {
     cwd?: string;
 }
 
+/** A program to run in place of the profile's shell. */
+export interface Command {
+    shell: string;
+    shellArgs: string[];
+}
+
 export async function newSession(
     profileName: string | undefined,
     restored?: RestoredPane,
+    command?: Command,
 ): Promise<string> {
     const s = getState();
     const profile =
@@ -69,8 +76,8 @@ export async function newSession(
         config,
         fontSize(s),
         {
-            shell: config.shell || undefined,
-            shellArgs: config.shell ? config.shellArgs : undefined,
+            shell: command?.shell ?? (config.shell || undefined),
+            shellArgs: command?.shellArgs ?? (config.shell ? config.shellArgs : undefined),
             cwd,
             env: config.env,
         },
@@ -99,6 +106,7 @@ export async function newSession(
             },
             onExit: () => removeSession(sessionUid),
             onFocus: () => setActiveSession(sessionUid),
+            onSshLink: (link) => setState({ sshPrompt: { link, profile } }),
             onUse: () => {
                 if (!getState().sessions[sessionUid]?.used)
                     updateSession(sessionUid, { used: true });
@@ -107,6 +115,7 @@ export async function newSession(
         },
         (shell, ptyId) => updateSession(sessionUid, { shell, ptyId }),
         restored,
+        command !== undefined,
     );
     terms.set(sessionUid, session);
     setState((st) => ({
@@ -136,8 +145,8 @@ function updateSession(sessionUid: string, patch: Partial<State["sessions"][stri
     });
 }
 
-export async function newTab(profile?: string) {
-    const sessionUid = await newSession(profile);
+export async function newTab(profile?: string, command?: Command) {
+    const sessionUid = await newSession(profile, undefined, command);
     const groupUid = uid("g");
     setState((st) => ({
         groups: {
