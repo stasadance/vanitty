@@ -39,7 +39,8 @@ export const App = () => {
                         fontFamily: config.uiFontFamily,
                         borderColor: config.borderColor,
                         backgroundColor: config.backgroundColor,
-                        borderWidth: isMaximized || isFullScreen ? 0 : 1,
+                        // macOS draws its own window outline.
+                        borderWidth: isMac || isMaximized || isFullScreen ? 0 : 1,
                         "--vanitty-radius": `${config.borderRadius * uiScale}px`,
                         "--ui-scale": uiScale,
                     } as React.CSSProperties

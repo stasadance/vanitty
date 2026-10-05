@@ -17,7 +17,7 @@ import {
 } from "./store";
 import { ptyCwd } from "./terms/pty";
 import { terms } from "./terms/registry";
-import { TermSession } from "./terms/session";
+import { type RestoredScreen, TermSession } from "./terms/session";
 
 import type { Config, TermConfig } from "./config/defaults";
 
@@ -37,10 +37,9 @@ export function fontSize(s: State = getState()) {
 }
 
 /** A pane from the last run to bring back. */
-export interface RestoredPane {
+export interface RestoredPane extends RestoredScreen {
     uid: string;
     cwd?: string;
-    screen?: string;
 }
 
 export async function newSession(
@@ -107,7 +106,7 @@ export async function newSession(
             onSearchResults: (searchResults) => updateSession(sessionUid, { searchResults }),
         },
         (shell, ptyId) => updateSession(sessionUid, { shell, ptyId }),
-        restored?.screen,
+        restored,
     );
     terms.set(sessionUid, session);
     setState((st) => ({

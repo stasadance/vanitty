@@ -14,6 +14,8 @@ import {
 } from "./store";
 import { terms } from "./terms/registry";
 
+import type { Divider } from "./terms/session";
+
 /** What one window saves so the next launch can reopen it. */
 interface WindowSnapshot {
     version: 1;
@@ -21,7 +23,10 @@ interface WindowSnapshot {
     activeRoot: string | null;
     activeSessions: Record<string, string>;
     groups: Record<string, TermGroup>;
-    panes: Record<string, { profile: string; title: string; cwd?: string; screen: string }>;
+    panes: Record<
+        string,
+        { profile: string; title: string; cwd?: string; screen: string; dividers?: Divider[] }
+    >;
 }
 
 const SAVE_DELAY = 3000;
@@ -46,7 +51,7 @@ async function snapshot(s: State): Promise<WindowSnapshot | null> {
             profile: session.profile,
             title: session.title,
             cwd: await term.cwd(),
-            screen: term.snapshot(),
+            ...term.snapshot(),
         };
     }
     return {
@@ -89,7 +94,7 @@ async function open(snap: WindowSnapshot) {
     for (const g of Object.values(snap.groups)) {
         if (!g.sessionUid) continue;
         const pane = snap.panes[g.sessionUid];
-        await newSession(pane.profile, { uid: g.sessionUid, cwd: pane.cwd, screen: pane.screen });
+        await newSession(pane.profile, { ...pane, uid: g.sessionUid });
     }
     setState((st) => {
         const sessions = { ...st.sessions };

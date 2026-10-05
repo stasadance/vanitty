@@ -164,17 +164,6 @@ body,
     display: none;
 }
 
-.tabs_title {
-    text-align: center;
-    color: #fff;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    padding-left: 76px;
-    padding-right: 76px;
-    flex-grow: 1;
-}
-
 .tabs_list {
     max-height: 34px;
     display: flex;
@@ -464,6 +453,30 @@ body,
 
 .term_wrapper {
     overflow: hidden;
+}
+
+.term_restored {
+    width: 100% !important;
+    pointer-events: none;
+}
+
+.term_restoredLine {
+    display: flex;
+    align-items: center;
+    gap: 1.5ch;
+    height: 100%;
+    white-space: nowrap;
+    opacity: 0.25;
+}
+
+.term_restoredLine::before,
+.term_restoredLine::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: currentColor;
+    /* 15% overall */
+    opacity: 0.6;
 }
 
 /* Split panes */
