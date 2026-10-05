@@ -3,7 +3,7 @@ title: Introduction
 description: "Vanitty is a free, open-source terminal emulator for Windows, macOS and Linux, built with Rust and Tauri."
 head:
     - tag: title
-      content: "Vanitty docs: open-source terminal emulator"
+      content: "Vanitty docs: open-source terminal emulator, a Hyper alternative"
 ---
 
 Vanitty is a fast, native terminal. It's built with Rust and Tauri.
