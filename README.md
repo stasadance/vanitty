@@ -3,7 +3,7 @@
   <img alt="Vanitty" src="docs/assets/logo-dark.svg#gh-dark-mode-only" width="360">
 </p>
 
-A fast, native terminal built with Rust and Tauri.
+<p align="center">A fast, native terminal built with Rust and Tauri.</p>
 
 <p align="center"><img alt="Vanitty with tabs and a split running neofetch, git log and code" src="docs/assets/screenshots/hero.png"></p>
 
