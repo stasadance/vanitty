@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, CloseTab, Plus } from "./icons";
 
 import { closeTab, reorderTab, selectTab } from "../actions";
-import { isMac } from "../config/keymaps";
 import { profileIcon } from "../config/profile-icon";
 import { useStore } from "../store";
 
@@ -23,7 +22,8 @@ export const Tabs = ({ titles, activeIndex, onNewTab }: Properties) => {
     const sessions = useStore((s) => s.sessions);
     const groups = useStore((s) => s.groups);
     const borderColor = useStore((s) => s.config.borderColor);
-    const isFullScreen = useStore((s) => s.fullScreen);
+    // A single tab shows no bar, only the title bar above it.
+    const isVisible = tabs.length > 1;
 
     const hasActivity = (root: string) => {
         const hasActivityIn = (uid: string): boolean => {
@@ -65,64 +65,58 @@ export const Tabs = ({ titles, activeIndex, onNewTab }: Properties) => {
     };
 
     return (
-        <nav
-            className={`tabs_nav ${isMac ? "" : "tabs_navShifted"}`}
-            data-tauri-drag-region={isMac ? true : undefined}
-        >
-            <ul
-                ref={listReference}
-                className={`tabs_list ${isMac ? "tabs_listMac" : ""} ${isFullScreen && isMac ? "tabs_fullScreen" : ""}`}
-            >
-                {tabs.map((root, index) => {
-                    const isActive = index === activeIndex;
-                    const isFirst = index === 0;
-                    const isActivity = !isActive && hasActivity(root);
-                    return (
-                        <li
-                            key={root}
-                            style={{ borderColor }}
-                            className={`tab_tab ${isFirst ? "tab_first" : ""} ${isActive ? "tab_active" : ""} ${
-                                isFirst && isActive ? "tab_firstActive" : ""
-                            } ${isActivity ? "tab_hasActivity" : ""} ${dragging === root ? "tab_dragging" : ""}`}
-                        >
-                            <span
-                                className={`tab_text ${index === tabs.length - 1 ? "tab_textLast" : ""} ${isActive ? "tab_textActive" : ""}`}
-                                onMouseDown={(event) => startDrag(event, root)}
-                                onClick={(event) => {
-                                    if (!isActive && event.button === 0) selectTab(root);
-                                }}
-                                onMouseUp={(event) => {
-                                    if (event.button === 1) closeTab(root);
-                                }}
-                            >
-                                <span title={titles[index]} className="tab_textInner">
-                                    {titles[index]}
-                                </span>
-                            </span>
-                            <i className="tab_icon" onClick={() => closeTab(root)}>
-                                <CloseTab />
-                            </i>
-                        </li>
-                    );
-                })}
-            </ul>
-            {isMac && (
-                <div
-                    style={{ borderColor }}
-                    className={`tabs_borderShim ${isFullScreen ? "tabs_borderShimUndo" : ""}`}
-                />
+        <nav className={`tabs_nav tabs_navShifted ${isVisible ? "" : "tabs_hiddenNav"}`}>
+            {isVisible && (
+                <>
+                    <ul ref={listReference} className="tabs_list">
+                        {tabs.map((root, index) => {
+                            const isActive = index === activeIndex;
+                            const isFirst = index === 0;
+                            const isActivity = !isActive && hasActivity(root);
+                            return (
+                                <li
+                                    key={root}
+                                    style={{ borderColor }}
+                                    className={`tab_tab ${isFirst ? "tab_first" : ""} ${isActive ? "tab_active" : ""} ${
+                                        isFirst && isActive ? "tab_firstActive" : ""
+                                    } ${isActivity ? "tab_hasActivity" : ""} ${dragging === root ? "tab_dragging" : ""}`}
+                                >
+                                    <span
+                                        className={`tab_text ${index === tabs.length - 1 ? "tab_textLast" : ""} ${isActive ? "tab_textActive" : ""}`}
+                                        onMouseDown={(event) => startDrag(event, root)}
+                                        onClick={(event) => {
+                                            if (!isActive && event.button === 0) selectTab(root);
+                                        }}
+                                        onMouseUp={(event) => {
+                                            if (event.button === 1) closeTab(root);
+                                        }}
+                                    >
+                                        <span title={titles[index]} className="tab_textInner">
+                                            {titles[index]}
+                                        </span>
+                                    </span>
+                                    <i className="tab_icon" onClick={() => closeTab(root)}>
+                                        <CloseTab />
+                                    </i>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </>
             )}
-            <NewTabButton onNewTab={onNewTab} />
-            <div
-                className="tabs_filler"
-                style={{ borderColor }}
-                data-tauri-drag-region={isMac ? true : undefined}
-            />
+            <NewTabButton tabsVisible={isVisible} onNewTab={onNewTab} />
+            {isVisible && <div className="tabs_filler" style={{ borderColor }} />}
         </nav>
     );
 };
 
-const NewTabButton = ({ onNewTab }: { onNewTab: (p?: string) => void }) => {
+const NewTabButton = ({
+    tabsVisible,
+    onNewTab,
+}: {
+    tabsVisible: boolean;
+    onNewTab: (p?: string) => void;
+}) => {
     const [open, setOpen] = useState(false);
     const reference = useRef<HTMLDivElement>(null);
     const profiles = useStore((s) => s.config.profiles);
@@ -142,8 +136,8 @@ const NewTabButton = ({ onNewTab }: { onNewTab: (p?: string) => void }) => {
     return (
         <div
             ref={reference}
-            className="new_tab"
-            style={{ borderColor }}
+            className={`new_tab ${tabsVisible ? "tabs_visible" : "tabs_hidden"}`}
+            style={{ borderColor: tabsVisible ? borderColor : undefined }}
             onDoubleClick={(event) => event.stopPropagation()}
         >
             <div title="New Tab" className="new_tab_button" onClick={() => onNewTab()}>

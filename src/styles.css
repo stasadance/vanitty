@@ -57,6 +57,9 @@ body,
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+.header_windowHeaderWithBorder {
     border-color: #ccc;
     border-bottom-style: solid;
     border-bottom-width: 1px;
@@ -157,6 +160,10 @@ body,
     top: 34px;
 }
 
+.tabs_hiddenNav {
+    display: none;
+}
+
 .tabs_list {
     max-height: 34px;
     display: flex;
@@ -167,27 +174,6 @@ body,
 .tabs_filler {
     flex-grow: 1;
     border-bottom: 1px solid;
-}
-
-.tabs_listMac {
-    margin-left: 76px;
-}
-
-.tabs_fullScreen {
-    margin-left: -1px;
-}
-
-.tabs_borderShim {
-    position: absolute;
-    width: 76px;
-    bottom: 0;
-    border-color: #ccc;
-    border-bottom-style: solid;
-    border-bottom-width: 1px;
-}
-
-.tabs_borderShimUndo {
-    border-bottom-width: 0;
 }
 
 .tab_tab {
@@ -342,6 +328,12 @@ body,
     height: 10px;
 }
 
+.tabs_hidden {
+    border-color: transparent;
+    position: absolute;
+    right: 0;
+}
+
 .profile_dropdown {
     border-width: 1px;
     border-style: solid;
@@ -390,6 +382,32 @@ body,
     left: 0;
     bottom: 0;
     color: #fff;
+}
+
+.terms_termsShifted {
+    animation: shift-down 0.2s ease-out;
+}
+
+.terms_termsNotShifted {
+    animation: shift-up 0.3s ease;
+}
+
+@keyframes shift-down {
+    0% {
+        transform: translateY(calc(-34px * var(--ui-scale, 1)));
+    }
+    100% {
+        transform: translateY(0);
+    }
+}
+
+@keyframes shift-up {
+    0% {
+        transform: translateY(calc(34px * var(--ui-scale, 1)));
+    }
+    100% {
+        transform: translateY(0);
+    }
 }
 
 .terms_termGroup {

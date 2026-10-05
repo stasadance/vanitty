@@ -4,7 +4,7 @@ import { SearchBox } from "./search-box";
 import { SplitPane } from "./split-pane";
 
 import { profileConfig, resizeGroup, setActiveSession, setSearch } from "../actions";
-import { isMac, uiScale } from "../config/keymaps";
+import { uiScale } from "../config/keymaps";
 import { popupContextMenu } from "../menu";
 import { useStore } from "../store";
 import { terms } from "../terms/registry";
@@ -12,10 +12,14 @@ import { terms } from "../terms/registry";
 export const Terms = () => {
     const tabs = useStore((s) => s.tabs);
     const activeRoot = useStore((s) => s.activeRoot);
-    // Linux and Windows draw a title bar row above the tab row.
-    const top = (isMac ? 34 : 68) * uiScale;
+    // A title bar row, plus a tab row once there are tabs.
+    const isShifted = tabs.length > 1;
+    const top = (isShifted ? 68 : 34) * uiScale;
     return (
-        <div className="terms_terms" style={{ marginTop: top }}>
+        <div
+            className={`terms_terms ${isShifted ? "terms_termsShifted" : "terms_termsNotShifted"}`}
+            style={{ marginTop: top }}
+        >
             {/* Stable order, not tab order: dragging tabs must not move a
                 terminal in the DOM, which can leave its WebGL canvas blank. */}
             {[...tabs]
