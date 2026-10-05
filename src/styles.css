@@ -57,9 +57,6 @@ body,
     display: flex;
     justify-content: center;
     align-items: center;
-}
-
-.header_windowHeaderWithBorder {
     border-color: #ccc;
     border-bottom-style: solid;
     border-bottom-width: 1px;
@@ -158,10 +155,6 @@ body,
 
 .tabs_navShifted {
     top: 34px;
-}
-
-.tabs_hiddenNav {
-    display: none;
 }
 
 .tabs_list {
@@ -349,12 +342,6 @@ body,
     height: 10px;
 }
 
-.tabs_hidden {
-    border-color: transparent;
-    position: absolute;
-    right: 0;
-}
-
 .profile_dropdown {
     border-width: 1px;
     border-style: solid;
@@ -403,32 +390,6 @@ body,
     left: 0;
     bottom: 0;
     color: #fff;
-}
-
-.terms_termsShifted {
-    animation: shift-down 0.2s ease-out;
-}
-
-.terms_termsNotShifted {
-    animation: shift-up 0.3s ease;
-}
-
-@keyframes shift-down {
-    0% {
-        transform: translateY(calc(-34px * var(--ui-scale, 1)));
-    }
-    100% {
-        transform: translateY(0);
-    }
-}
-
-@keyframes shift-up {
-    0% {
-        transform: translateY(calc(34px * var(--ui-scale, 1)));
-    }
-    100% {
-        transform: translateY(0);
-    }
 }
 
 .terms_termGroup {

@@ -12,14 +12,10 @@ import { terms } from "../terms/registry";
 export const Terms = () => {
     const tabs = useStore((s) => s.tabs);
     const activeRoot = useStore((s) => s.activeRoot);
-    // Linux and Windows draw a title bar row, plus a tab row once there are tabs.
-    const isShifted = !isMac && tabs.length > 1;
-    const top = (isShifted ? 68 : 34) * uiScale;
+    // Linux and Windows draw a title bar row above the tab row.
+    const top = (isMac ? 34 : 68) * uiScale;
     return (
-        <div
-            className={`terms_terms ${isShifted ? "terms_termsShifted" : "terms_termsNotShifted"}`}
-            style={{ marginTop: top }}
-        >
+        <div className="terms_terms" style={{ marginTop: top }}>
             {/* Stable order, not tab order: dragging tabs must not move a
                 terminal in the DOM, which can leave its WebGL canvas blank. */}
             {[...tabs]

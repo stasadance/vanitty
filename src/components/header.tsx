@@ -45,11 +45,7 @@ export const Header = () => {
             }}
         >
             {!isMac && (
-                <div
-                    className={`header_windowHeader ${tabs.length > 1 ? "header_windowHeaderWithBorder" : ""}`}
-                    style={{ borderColor }}
-                    data-tauri-drag-region
-                >
+                <div className="header_windowHeader" style={{ borderColor }} data-tauri-drag-region>
                     {isHambMenu && (
                         <div
                             className={`header_shape ${isLeft ? "header_hamburgerMenuRight" : "header_hamburgerMenuLeft"}`}
