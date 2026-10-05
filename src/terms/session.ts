@@ -9,7 +9,7 @@ import { SerializeAddon } from "@xterm/addon-serialize";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
-import { type IDisposable, type ITerminalOptions, Terminal } from "@xterm/xterm";
+import { type IDisposable, type IMarker, type ITerminalOptions, Terminal } from "@xterm/xterm";
 import Color from "color";
 
 import { DEFAULT_BELL } from "./bell";
@@ -102,6 +102,20 @@ export function termOptions(c: TermConfig, fontSize: number): ITerminalOptions {
     };
 }
 
+/** Where a restore divider sits: logical lines above the cursor, and when it was drawn. */
+export interface Divider {
+    rows: number;
+    at: number;
+}
+
+/** Screen text from the last run and its dividers. */
+export interface RestoredScreen {
+    screen: string;
+    dividers?: Divider[];
+}
+
+const DIVIDER_ROWS = 2;
+
 export interface SessionEvents {
     onTitle(title: string): void;
     onData(data: Uint8Array): void;
@@ -130,6 +144,7 @@ export class TermSession {
     private opened = false;
     private exited = false;
     private resizeTimer?: ReturnType<typeof setTimeout>;
+    private dividers: { marker: IMarker; at: number }[] = [];
     readonly term: Terminal;
     readonly element: HTMLDivElement;
     ptyId?: number;
@@ -145,7 +160,7 @@ export class TermSession {
         private events: SessionEvents,
         private onSpawned: (shell: string, ptyId: number) => void,
         /** Screen text from the last run, shown above the new shell. */
-        private restored?: string,
+        private restored?: RestoredScreen,
     ) {
         this.config = config;
         this.fontSize = fontSize;
@@ -185,7 +200,14 @@ export class TermSession {
         this.applyPadding();
         this.fit.fit();
         if (this.restored) {
-            term.write(this.restored + "\r\n\r\n", () => this.markRestored());
+            const { screen, dividers = [] } = this.restored;
+            term.write(screen, () => {
+                for (const d of dividers)
+                    this.addDivider(this.cursorLine() - this.lineAbove(d.rows), d.at);
+            });
+            term.write("\r\n".repeat(DIVIDER_ROWS + 1), () =>
+                this.addDivider(DIVIDER_ROWS, Date.now()),
+            );
             this.restored = undefined;
         }
 
@@ -211,17 +233,53 @@ export class TermSession {
         void this.start(this.spawn);
     }
 
-    /** A hairline on the blank row between last run's output and the new shell. */
-    private markRestored() {
-        const marker = this.term.registerMarker(-1);
+    private cursorLine() {
+        const b = this.term.buffer.normal;
+        return b.baseY + b.cursorY;
+    }
+
+    /** The line that many logical lines above the cursor, so rewrapping doesn't move it. */
+    private lineAbove(rows: number) {
+        const b = this.term.buffer.normal;
+        let line = this.cursorLine();
+        for (let n = 0; n < rows && line >= 0; line--) {
+            if (!b.getLine(line)?.isWrapped) n++;
+        }
+        return line;
+    }
+
+    /** A timestamped hairline on the blank rows between a run's output and the next. */
+    private addDivider(rowsUp: number, at: number) {
+        const marker = this.term.registerMarker(-rowsUp);
+        if (marker.line < 0) {
+            marker.dispose();
+            return;
+        }
+        const label = new Date(at).toLocaleString(undefined, {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
         const divider = this.term.registerDecoration({
             marker,
             width: this.term.cols,
+            height: DIVIDER_ROWS,
             layer: "top",
         });
         divider?.onRender((element) => {
             element.className = "xterm-decoration xterm-decoration-top-layer term_restored";
             element.style.color = this.config.foregroundColor;
+            element.style.fontSize = `${(this.term.options.fontSize ?? 12) * 0.75}px`;
+            if (element.firstChild) return;
+            const line = document.createElement("div");
+            line.className = "term_restoredLine";
+            line.textContent = label;
+            element.append(line);
+        });
+        this.dividers.push({ marker, at });
+        marker.onDispose(() => {
+            this.dividers = this.dividers.filter((d) => d.marker !== marker);
         });
     }
 
@@ -362,10 +420,21 @@ export class TermSession {
     }
 
     /** Screen and scrollback text, without what full-screen programs drew. */
-    snapshot(): string {
-        return this.opened
-            ? this.serializer.serialize({ excludeAltBuffer: true, excludeModes: true })
-            : (this.restored ?? "");
+    snapshot(): RestoredScreen {
+        if (!this.opened)
+            return { screen: this.restored?.screen ?? "", dividers: this.restored?.dividers };
+        const b = this.term.buffer.normal;
+        const cursor = this.cursorLine();
+        return {
+            screen: this.serializer.serialize({ excludeAltBuffer: true, excludeModes: true }),
+            dividers: this.dividers.map(({ marker, at }) => {
+                let rows = 0;
+                for (let line = marker.line + 1; line <= cursor; line++) {
+                    if (!b.getLine(line)?.isWrapped) rows++;
+                }
+                return { rows, at };
+            }),
+        };
     }
 
     /** The shell's current directory, else the one it started in. */

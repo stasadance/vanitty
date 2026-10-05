@@ -471,21 +471,23 @@ body,
     pointer-events: none;
 }
 
-.term_restored::before {
+.term_restoredLine {
+    display: flex;
+    align-items: center;
+    gap: 1.5ch;
+    height: 100%;
+    white-space: nowrap;
+    opacity: 0.4;
+}
+
+.term_restoredLine::before,
+.term_restoredLine::after {
     content: "";
-    position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
+    flex: 1;
     height: 1px;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        currentColor 20%,
-        currentColor 80%,
-        transparent
-    );
-    opacity: 0.25;
+    background: currentColor;
+    /* 15% overall */
+    opacity: 0.375;
 }
 
 /* Split panes */
