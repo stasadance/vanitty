@@ -1,6 +1,6 @@
 name: CI
 
-# Typechecks and builds the frontend, then lints and tests the Rust side on
+# Lints, typechecks and builds the frontend, then lints and tests the Rust side on
 # Linux, Windows and macOS for every pull request and push to main.
 on:
     pull_request:
