@@ -1,12 +1,12 @@
 ---
 title: Introduction
-description: "Vanitty is a free, open-source terminal emulator for Windows, macOS and Linux, and a native Rust + Tauri alternative to Hyper."
+description: "Vanitty is a free, open-source terminal emulator for Windows, macOS and Linux, built with Rust and Tauri."
 head:
     - tag: title
       content: "Vanitty docs: open-source terminal emulator, a Hyper alternative"
 ---
 
-Vanitty is a fast, native terminal. It's a Rust and Tauri rewrite of [Hyper](https://github.com/vercel/hyper) without Electron. It keeps Hyper's look, config and themes.
+Vanitty is a fast, native terminal. It's built with Rust and Tauri.
 
 ## Features
 

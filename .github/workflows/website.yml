@@ -48,3 +48,14 @@ jobs:
         steps:
             - id: deployment
               uses: actions/deploy-pages@v5
+            # Tells Bing, Yandex and the other IndexNow engines which pages changed. The key
+            # is public by design; the engines check it against website/public/<key>.txt.
+            - name: Notify IndexNow
+              continue-on-error: true
+              env:
+                  KEY: afda91eb47bd0aa4b5d0f7efd561cbbf
+              run: |
+                  urls=$(curl -fsSL https://vanitty.dev/sitemap-0.xml | grep -o '<loc>[^<]*' | sed 's/<loc>//' | jq -R . | jq -sc .)
+                  curl -fsS -X POST https://api.indexnow.org/indexnow \
+                      -H 'Content-Type: application/json; charset=utf-8' \
+                      -d "{\"host\":\"vanitty.dev\",\"key\":\"$KEY\",\"urlList\":$urls}"
