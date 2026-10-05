@@ -7,7 +7,7 @@ import { Header, useTabTitles } from "./components/header";
 import { Notifications } from "./components/notifications";
 import { Terms } from "./components/terms";
 import { ThemePicker } from "./components/theme-picker";
-import { uiScale } from "./config/keymaps";
+import { isMac, uiScale } from "./config/keymaps";
 import { useStore } from "./store";
 
 export const App = () => {
@@ -31,7 +31,9 @@ export const App = () => {
 
     // macOS clips the window to its own radius, so the border follows that.
     const radius = systemRadius ?? config.borderRadius * uiScale;
-    const isRounded = !isMaximized && !isFullScreen && radius > 0;
+    // A zoomed macOS window keeps its rounded frame; elsewhere maximized is edge to edge.
+    const isEdgeless = isFullScreen || (isMaximized && !isMac);
+    const isRounded = !isEdgeless && radius > 0;
 
     return (
         <div id="hyper">
@@ -42,7 +44,7 @@ export const App = () => {
                         fontFamily: config.uiFontFamily,
                         borderColor: config.borderColor,
                         backgroundColor: config.backgroundColor,
-                        borderWidth: isMaximized || isFullScreen ? 0 : 1,
+                        borderWidth: isEdgeless ? 0 : 1,
                         "--vanitty-radius": `${radius}px`,
                         "--ui-scale": uiScale,
                     } as React.CSSProperties
