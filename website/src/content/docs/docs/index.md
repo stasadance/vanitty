@@ -16,7 +16,7 @@ Vanitty is a fast, native terminal. It's built with Rust and Tauri.
 - Ships with FiraCode Nerd Font Mono, with ligatures (`disableLigatures` turns them off)
 - Profiles: per-profile shell, args, env and colors, picked from the new-tab menu
 - New tabs and splits open in the current directory (`preserveCWD`, macOS and Linux)
-- Shell > Reopen Last Session brings back your windows, tabs, splits, folders and terminal text (<kbd>⌘⇧T</kbd>, <kbd>Ctrl+Shift+Alt+T</kbd> on Linux and Windows). Set `restoreSession` to reopen them on every launch. Remembers window size
+- Shell > Reopen Last Session brings back your windows, tabs, splits, folders and terminal text (<kbd>⌘⇧T</kbd>, <kbd>Ctrl+Shift+O</kbd> on Linux and Windows). Press it again for the session before; the last five are kept. Set `restoreSession` to reopen them on every launch. Window size is remembered too.
 - Zoom, full screen, always on top, copy on select, quick edit, bell sound
 - Drag files onto a terminal to paste their paths
 - Rounded, frameless window on Linux and Windows; native rounded window on macOS

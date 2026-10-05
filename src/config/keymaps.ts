@@ -75,7 +75,7 @@ const linux: Keymap = {
     "window:toggleFullScreen": "f11",
     "window:close": "ctrl+shift+q",
     "tab:new": "ctrl+shift+t",
-    "window:reopenSession": "ctrl+shift+alt+t",
+    "window:reopenSession": "ctrl+shift+o",
     "tab:next": ["ctrl+shift+]", "ctrl+shift+right", "ctrl+alt+right", "ctrl+tab"],
     "tab:prev": ["ctrl+shift+[", "ctrl+shift+left", "ctrl+alt+left", "ctrl+shift+tab"],
     "tab:jump:prefix": "ctrl",

@@ -2,9 +2,10 @@
 //! them. Each window's webview builds its own snapshot; this module holds the
 //! latest one per window and writes them all to `session.json`.
 //!
-//! Windows not worth keeping (one untouched tab) send no snapshot. The last
-//! run's session stays on disk as `previous` until it's reopened, so opening
-//! and closing such a window doesn't lose it.
+//! Like Chrome, it keeps the last few runs' sessions. Each reopen brings back
+//! the newest one not yet reopened. Windows not worth keeping (one untouched
+//! tab) send no snapshot, so a run with only those doesn't push out a real
+//! session.
 
 use std::collections::{BTreeMap, VecDeque};
 use std::path::PathBuf;
@@ -18,22 +19,25 @@ use crate::config::config_dir;
 use crate::window;
 
 const FILE: &str = "session.json";
+/// How many past sessions to keep.
+const HISTORY: usize = 5;
 
 #[derive(Default, Serialize, Deserialize)]
 struct SessionFile {
     windows: Vec<Value>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    previous: Vec<Value>,
+    /// Earlier runs' windows, newest first.
+    #[serde(default)]
+    history: Vec<Vec<Value>>,
 }
 
 #[derive(Default)]
 struct Inner {
     /// Latest snapshot of each open window, keyed by creation order.
     windows: BTreeMap<u32, Value>,
-    /// Saved windows from the last run that haven't been reopened yet.
-    pending: VecDeque<Value>,
-    /// Windows opened to reopen saved ones that haven't taken theirs yet.
-    opening: usize,
+    /// Past sessions not reopened yet, newest first.
+    history: VecDeque<Vec<Value>>,
+    /// Saved windows waiting for the new windows a reopen opened.
+    opening: VecDeque<Value>,
     /// Whether the first window has asked for its snapshot yet.
     started: bool,
     /// Set while quitting, so closing every window doesn't forget them.
@@ -62,13 +66,13 @@ impl SessionStore {
             .ok()
             .and_then(|b| serde_json::from_slice(&b).ok())
             .unwrap_or_default();
-        let pending = if saved.windows.is_empty() {
-            saved.previous
-        } else {
-            saved.windows
-        };
+        let mut history: VecDeque<_> = saved.history.into();
+        if !saved.windows.is_empty() {
+            history.push_front(saved.windows);
+        }
+        history.truncate(HISTORY);
         Self(Mutex::new(Inner {
-            pending: pending.into(),
+            history,
             ..Default::default()
         }))
     }
@@ -76,7 +80,7 @@ impl SessionStore {
     fn write(inner: &Inner) {
         let file = SessionFile {
             windows: inner.windows.values().cloned().collect(),
-            previous: inner.pending.iter().cloned().collect(),
+            history: inner.history.iter().cloned().collect(),
         };
         let path = path();
         if let Some(dir) = path.parent() {
@@ -105,19 +109,21 @@ impl SessionStore {
     }
 }
 
-/// Gives this window the first saved window and opens a window for each of
-/// the rest.
-fn reopen(app: &AppHandle, store: &SessionStore) -> Option<Value> {
+/// Takes the newest past session and opens a new window for each of its
+/// windows, except the first when it goes `here`. None when there's none left.
+fn reopen(app: &AppHandle, store: &SessionStore, here: bool) -> Option<Option<Value>> {
     let (mine, others) = {
         let mut inner = store.0.lock().unwrap();
-        let mine = inner.pending.pop_front();
-        inner.opening = inner.pending.len();
-        (mine, inner.opening)
+        let mut windows = VecDeque::from(inner.history.pop_front()?);
+        let mine = if here { windows.pop_front() } else { None };
+        let others = windows.len();
+        inner.opening.extend(windows);
+        (mine, others)
     };
     for _ in 0..others {
         let _ = window::create(app);
     }
-    mine
+    Some(mine)
 }
 
 /// This window's snapshot from the last run, if any. Windows opened by a
@@ -131,22 +137,32 @@ pub fn session_take(
 ) -> Option<Value> {
     {
         let mut inner = store.0.lock().unwrap();
-        if inner.opening > 0 {
-            inner.opening -= 1;
-            return inner.pending.pop_front();
+        if let Some(snapshot) = inner.opening.pop_front() {
+            return Some(snapshot);
         }
         let first = !std::mem::replace(&mut inner.started, true);
         if !(restore && first) {
             return None;
         }
     }
-    reopen(&app, &store)
+    reopen(&app, &store, true).flatten()
 }
 
-/// Reopens the last run's windows: this window gets the first.
+#[derive(Serialize)]
+pub struct Reopened {
+    /// The first window's snapshot, when it opens in the calling window.
+    here: Option<Value>,
+}
+
+/// Reopens the newest past session not reopened yet. With `here`, its first
+/// window opens in the calling window.
 #[tauri::command]
-pub fn session_reopen(app: AppHandle, store: State<'_, SessionStore>) -> Option<Value> {
-    reopen(&app, &store)
+pub fn session_reopen(
+    app: AppHandle,
+    store: State<'_, SessionStore>,
+    here: bool,
+) -> Option<Reopened> {
+    reopen(&app, &store, here).map(|here| Reopened { here })
 }
 
 /// Stores this window's snapshot, or forgets the window when it's `null`.

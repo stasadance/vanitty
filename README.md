@@ -18,7 +18,7 @@
 - Zoom, full screen, always on top, copy on select, quick edit, bell sound
 - Programs like tmux, vim and remote shells can copy to your clipboard (OSC 52)
 - Drag files onto a terminal to paste their paths
-- Shell > Reopen Last Session brings back your windows, tabs, splits, folders and terminal text (<kbd>⌘⇧T</kbd>, <kbd>Ctrl+Shift+Alt+T</kbd> on Linux and Windows). Set `restoreSession` to reopen them on every launch. Remembers window size
+- Shell > Reopen Last Session brings back your windows, tabs, splits, folders and terminal text (<kbd>⌘⇧T</kbd>, <kbd>Ctrl+Shift+O</kbd> on Linux and Windows). Press it again for the session before; the last five are kept. Set `restoreSession` to reopen them on every launch. Window size is remembered too.
 - Rounded, frameless window on Linux and Windows; native rounded window on macOS
 - Theme picker (Settings > Change Theme…) with built-in themes, your own JSON themes and reviewed Hyper themes; Hyper themes from npm run in a sandbox
 - Sandboxed JS plugins ([docs/plugins.md](docs/plugins.md))

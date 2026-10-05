@@ -124,17 +124,21 @@ export async function restoreSession(): Promise<boolean> {
     return true;
 }
 
-/** Brings back the last run's windows: the first into this window, replacing a fresh tab. */
+/** Brings back the newest past session not reopened yet. A fresh window takes its first window; the rest open as new windows. */
 export async function reopenSession() {
-    const snap = await orElse(invoke<WindowSnapshot | null>("session_reopen"), null);
-    if (!valid(snap)) {
+    const before = getState();
+    const isHere = isFresh(before);
+    const reopened = await orElse(
+        invoke<{ here: WindowSnapshot | null } | null>("session_reopen", { here: isHere }),
+        null,
+    );
+    if (!reopened) {
         notify("No saved session to reopen.");
         return;
     }
-    const before = getState();
-    const fresh = isFresh(before) ? before.tabs : [];
-    await open(snap);
-    for (const tab of fresh) closeTab(tab);
+    if (!valid(reopened.here)) return;
+    await open(reopened.here);
+    for (const tab of before.tabs) closeTab(tab);
 }
 
 /** Saves after layout changes, while output flows, and when the window closes. */
