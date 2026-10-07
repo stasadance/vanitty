@@ -7,6 +7,8 @@ mod session;
 mod shells;
 mod ssh;
 mod updater;
+#[cfg(target_os = "linux")]
+mod vblank;
 mod window;
 
 use tauri::webview::PageLoadEvent;
