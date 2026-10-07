@@ -31,7 +31,8 @@ function Install-Vanitty {
 
     Write-Host ""
     Write-Host "  " -NoNewline
-    if ($color) { Write-Host ">_" -ForegroundColor Magenta -NoNewline } else { Write-Host ">_" -NoNewline }
+    Write-Host ">" -NoNewline
+    if ($color) { Write-Host "_" -ForegroundColor Magenta -NoNewline } else { Write-Host "_" -NoNewline }
     Write-Host " Vanitty installer"
     Write-Host ""
 

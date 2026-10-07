@@ -262,7 +262,7 @@ done
 has curl || die "curl is required"
 
 say ""
-say "  ${MAGENTA}${BOLD}>_${RESET} ${BOLD}Vanitty${RESET} ${DIM}${action}er${RESET}"
+say "  ${BOLD}>${MAGENTA}_${RESET} ${BOLD}Vanitty${RESET} ${DIM}${action}er${RESET}"
 say ""
 
 case "$(uname -s)" in
