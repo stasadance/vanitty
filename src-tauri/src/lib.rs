@@ -46,6 +46,7 @@ pub fn run() {
             session::session_save,
             session::session_reopen,
             session::session_quitting,
+            session::session_open_window,
             shells::shells_detect,
             ssh::ssh_link,
         ])

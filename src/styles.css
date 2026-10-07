@@ -667,6 +667,59 @@ body,
     padding: 8px 12px;
 }
 
+.layout_picker_hint {
+    padding: 8px 12px;
+    font-size: 11px;
+    opacity: 0.6;
+}
+
+.layout_picker_warning {
+    font-weight: 600;
+}
+
+.layout_picker_actions {
+    display: flex;
+    gap: 2px;
+    visibility: hidden;
+}
+
+.layout_picker_selected .layout_picker_actions {
+    visibility: visible;
+}
+
+.layout_picker_actions button {
+    display: flex;
+    padding: 3px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    opacity: 0.6;
+    cursor: pointer;
+}
+
+.layout_picker_actions button:hover {
+    opacity: 1;
+    background: rgb(127 127 127 / 20%);
+}
+
+.layout_picker_actions svg {
+    width: 12px;
+    height: 12px;
+}
+
+.layout_picker_rename {
+    min-width: 0;
+    margin: -3px -4px;
+    padding: 2px 4px;
+    border: 1px solid;
+    border-radius: 4px;
+    outline: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+}
+
 /* ssh:// link prompt */
 
 .ssh_prompt_backdrop {

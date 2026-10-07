@@ -70,6 +70,8 @@ export const COMMANDS: Record<string, Command> = {
     "window:themes": () => setState({ themePicker: true }),
     "window:hamburgerMenu": () => window.dispatchEvent(new CustomEvent("vanitty:hamburger")),
     "window:reopenSession": () => reopenSession(),
+    "window:saveLayout": () => setState({ layoutPicker: "save" }),
+    "window:openLayout": () => setState({ layoutPicker: "open" }),
     "app:quit": async () => {
         // Keep every window for the next launch, not just the last one closed.
         await orElse(invoke("session_quitting"), undefined);

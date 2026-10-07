@@ -36,8 +36,8 @@ export function fontSize(s: State = getState()) {
     return s.fontSizeOverride ?? s.config.fontSize;
 }
 
-/** A pane from the last run to bring back. */
-export interface RestoredPane extends RestoredScreen {
+/** A pane from the last run or a saved layout. Layouts have no screen text. */
+export interface RestoredPane extends Partial<RestoredScreen> {
     uid: string;
     cwd?: string;
 }
@@ -114,7 +114,9 @@ export async function newSession(
             onSearchResults: (searchResults) => updateSession(sessionUid, { searchResults }),
         },
         (shell, ptyId) => updateSession(sessionUid, { shell, ptyId }),
-        restored,
+        restored?.screen === undefined
+            ? undefined
+            : { screen: restored.screen, dividers: restored.dividers },
         command !== undefined,
     );
     terms.set(sessionUid, session);

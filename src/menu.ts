@@ -72,6 +72,8 @@ async function submenus(): Promise<Submenu[]> {
             await item("New Tab", "tab:new"),
             await item("New Window", "window:new"),
             await item("Reopen Last Session", "window:reopenSession"),
+            await item("Save Layout…", "window:saveLayout"),
+            await item("Open Layout…", "window:openLayout"),
             ...(newTabProfiles.length > 0
                 ? [await Submenu.new({ text: "New Tab with Profile", items: newTabProfiles })]
                 : []),

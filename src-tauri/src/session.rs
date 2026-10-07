@@ -178,6 +178,17 @@ pub fn session_save(window: WebviewWindow, store: State<'_, SessionStore>, snaps
     SessionStore::write(&inner);
 }
 
+/// Opens a new window that starts with `snapshot`, such as a saved layout.
+#[tauri::command]
+pub fn session_open_window(
+    app: AppHandle,
+    store: State<'_, SessionStore>,
+    snapshot: Value,
+) -> Result<(), String> {
+    store.0.lock().unwrap().opening.push_back(snapshot);
+    window::create(&app).map(|_| ()).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn session_quitting(store: State<'_, SessionStore>) {
     store.0.lock().unwrap().quitting = true;

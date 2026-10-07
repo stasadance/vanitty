@@ -16,8 +16,8 @@ import { terms } from "./terms/registry";
 
 import type { Divider } from "./terms/session";
 
-/** What one window saves so the next launch can reopen it. */
-interface WindowSnapshot {
+/** What one window saves so the next launch can reopen it. Saved layouts leave out `screen`. */
+export interface WindowSnapshot {
     version: 1;
     tabs: string[];
     activeRoot: string | null;
@@ -25,7 +25,7 @@ interface WindowSnapshot {
     groups: Record<string, TermGroup>;
     panes: Record<
         string,
-        { profile: string; title: string; cwd?: string; screen: string; dividers?: Divider[] }
+        { profile: string; title: string; cwd?: string; screen?: string; dividers?: Divider[] }
     >;
 }
 
@@ -35,7 +35,7 @@ const saves = serial();
 const saveSoon = delayed(() => void saveNow(), SAVE_DELAY);
 
 /** One tab, one pane, never typed in: like a blank browser tab, not worth reopening. */
-function isFresh(s: State) {
+export function isFresh(s: State = getState()) {
     if (s.tabs.length !== 1) return s.tabs.length === 0;
     const panes = sessionsIn(s.groups, s.tabs[0]);
     return panes.length === 1 && !s.sessions[panes[0]]?.used;
@@ -78,7 +78,7 @@ export function markDirty() {
     saveSoon.schedule();
 }
 
-function valid(snap: WindowSnapshot | null): snap is WindowSnapshot {
+export function valid(snap: WindowSnapshot | null): snap is WindowSnapshot {
     if (snap?.version !== 1 || snap.tabs.length === 0) return false;
     const { groups, panes } = snap;
     return (
@@ -90,7 +90,7 @@ function valid(snap: WindowSnapshot | null): snap is WindowSnapshot {
 }
 
 /** Adds a saved window's tabs to this window. */
-async function open(snap: WindowSnapshot) {
+export async function openSnapshot(snap: WindowSnapshot) {
     for (const g of Object.values(snap.groups)) {
         if (!g.sessionUid) continue;
         const pane = snap.panes[g.sessionUid];
@@ -125,7 +125,7 @@ export async function restoreSession(): Promise<boolean> {
         null,
     );
     if (!valid(snap)) return false;
-    await open(snap);
+    await openSnapshot(snap);
     return true;
 }
 
@@ -142,7 +142,7 @@ export async function reopenSession() {
         return;
     }
     if (!valid(reopened.here)) return;
-    await open(reopened.here);
+    await openSnapshot(reopened.here);
     for (const tab of before.tabs) closeTab(tab);
 }
 

@@ -4,6 +4,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { boot } from "./boot";
 import { Header, useTabTitles } from "./components/header";
+import { LayoutPicker } from "./components/layout-picker";
 import { Notifications } from "./components/notifications";
 import { SshPrompt } from "./components/ssh-prompt";
 import { Terms } from "./components/terms";
@@ -18,6 +19,7 @@ export const App = () => {
     const activeRoot = useStore((s) => s.activeRoot);
     const tabs = useStore((s) => s.tabs);
     const isThemePicker = useStore((s) => s.themePicker);
+    const layoutPicker = useStore((s) => s.layoutPicker);
     const titles = useTabTitles();
     const title = activeRoot ? titles[tabs.indexOf(activeRoot)] : undefined;
 
@@ -51,6 +53,7 @@ export const App = () => {
                 <Terms />
                 <Notifications />
                 {isThemePicker && <ThemePicker />}
+                {layoutPicker && <LayoutPicker key={layoutPicker} mode={layoutPicker} />}
                 <SshPrompt />
             </div>
             <style>{`#hyper {\n${config.css ?? ""}\n}\n#hyper .term_term {\n${config.termCSS ?? ""}\n}`}</style>

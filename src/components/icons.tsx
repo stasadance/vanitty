@@ -60,3 +60,15 @@ export const ArrowDown = () => (
         <path d="M6 1.5v9M2 6.5l4 4 4-4" />
     </svg>
 );
+
+export const Pencil = () => (
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.1">
+        <path d="M8 1.5 10.5 4 4 10.5H1.5V8z" />
+    </svg>
+);
+
+export const Trash = () => (
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.1">
+        <path d="M1.5 3h9M4.5 3V1.5h3V3M2.5 3l.6 7.5h5.8L9.5 3" />
+    </svg>
+);
