@@ -44,52 +44,50 @@ export const Header = () => {
                 void popupTitleMenu(event.clientX, event.clientY);
             }}
         >
-            {!isMac && (
-                <div
-                    className={`header_windowHeader ${tabs.length > 1 ? "header_windowHeaderWithBorder" : ""}`}
-                    style={{ borderColor }}
-                    data-tauri-drag-region
-                >
-                    {isHambMenu && (
+            <div
+                className={`header_windowHeader ${tabs.length > 1 ? "header_windowHeaderWithBorder" : ""}`}
+                style={{ borderColor }}
+                data-tauri-drag-region
+            >
+                {isHambMenu && (
+                    <div
+                        className={`header_shape ${isLeft ? "header_hamburgerMenuRight" : "header_hamburgerMenuLeft"}`}
+                        onClick={(event) => {
+                            const r = event.currentTarget.getBoundingClientRect();
+                            void popupHamburger(r.left + 8, r.bottom);
+                        }}
+                    >
+                        <Hamburger />
+                    </div>
+                )}
+                <span className="header_appTitle" data-tauri-drag-region>
+                    {title}
+                </span>
+                {winCtrls && (
+                    <div
+                        className={`header_windowControls ${isLeft ? "header_windowControlsLeft" : ""}`}
+                    >
                         <div
-                            className={`header_shape ${isLeft ? "header_hamburgerMenuRight" : "header_hamburgerMenuLeft"}`}
-                            onClick={(event) => {
-                                const r = event.currentTarget.getBoundingClientRect();
-                                void popupHamburger(r.left + 8, r.bottom);
-                            }}
+                            className={`header_shape ${isLeft ? "header_minimizeWindowLeft" : ""}`}
+                            onClick={() => void win.minimize()}
                         >
-                            <Hamburger />
+                            <Minimize />
                         </div>
-                    )}
-                    <span className="header_appTitle" data-tauri-drag-region>
-                        {title}
-                    </span>
-                    {winCtrls && (
                         <div
-                            className={`header_windowControls ${isLeft ? "header_windowControlsLeft" : ""}`}
+                            className={`header_shape ${isLeft ? "header_maximizeWindowLeft" : ""}`}
+                            onClick={() => void win.toggleMaximize()}
                         >
-                            <div
-                                className={`header_shape ${isLeft ? "header_minimizeWindowLeft" : ""}`}
-                                onClick={() => void win.minimize()}
-                            >
-                                <Minimize />
-                            </div>
-                            <div
-                                className={`header_shape ${isLeft ? "header_maximizeWindowLeft" : ""}`}
-                                onClick={() => void win.toggleMaximize()}
-                            >
-                                {isMaximized ? <Restore /> : <Maximize />}
-                            </div>
-                            <div
-                                className={`header_shape header_closeWindow ${isLeft ? "header_closeWindowLeft" : ""}`}
-                                onClick={() => void win.close()}
-                            >
-                                <Close />
-                            </div>
+                            {isMaximized ? <Restore /> : <Maximize />}
                         </div>
-                    )}
-                </div>
-            )}
+                        <div
+                            className={`header_shape header_closeWindow ${isLeft ? "header_closeWindowLeft" : ""}`}
+                            onClick={() => void win.close()}
+                        >
+                            <Close />
+                        </div>
+                    </div>
+                )}
+            </div>
             <Tabs titles={titles} activeIndex={activeIndex} onNewTab={(p) => void newTab(p)} />
             <HeaderItems right={winCtrls && !isLeft ? 132 : 12} />
         </header>

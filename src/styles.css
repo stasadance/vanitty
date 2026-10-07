@@ -176,27 +176,6 @@ body,
     border-bottom: 1px solid;
 }
 
-.tabs_listMac {
-    margin-left: 76px;
-}
-
-.tabs_fullScreen {
-    margin-left: -1px;
-}
-
-.tabs_borderShim {
-    position: absolute;
-    width: 76px;
-    bottom: 0;
-    border-color: #ccc;
-    border-bottom-style: solid;
-    border-bottom-width: 1px;
-}
-
-.tabs_borderShimUndo {
-    border-bottom-width: 0;
-}
-
 .tab_tab {
     color: #ccc;
     border-color: #ccc;

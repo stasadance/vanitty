@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, CloseTab, Plus } from "./icons";
 
 import { closeTab, reorderTab, selectTab } from "../actions";
-import { isMac } from "../config/keymaps";
 import { profileIcon } from "../config/profile-icon";
 import { useStore } from "../store";
 
@@ -23,9 +22,8 @@ export const Tabs = ({ titles, activeIndex, onNewTab }: Properties) => {
     const sessions = useStore((s) => s.sessions);
     const groups = useStore((s) => s.groups);
     const borderColor = useStore((s) => s.config.borderColor);
-    const isFullScreen = useStore((s) => s.fullScreen);
-    // macOS always shows the bar, so a single tab looks like the rest.
-    const isVisible = isMac || tabs.length > 1;
+    // A single tab shows no bar, only the title bar above it.
+    const isVisible = tabs.length > 1;
 
     const hasActivity = (root: string) => {
         const hasActivityIn = (uid: string): boolean => {
@@ -67,16 +65,10 @@ export const Tabs = ({ titles, activeIndex, onNewTab }: Properties) => {
     };
 
     return (
-        <nav
-            className={`tabs_nav ${isVisible ? "" : "tabs_hiddenNav"} ${isMac ? "" : "tabs_navShifted"}`}
-            data-tauri-drag-region={isMac ? true : undefined}
-        >
+        <nav className={`tabs_nav tabs_navShifted ${isVisible ? "" : "tabs_hiddenNav"}`}>
             {isVisible && (
                 <>
-                    <ul
-                        ref={listReference}
-                        className={`tabs_list ${isMac ? "tabs_listMac" : ""} ${isFullScreen && isMac ? "tabs_fullScreen" : ""}`}
-                    >
+                    <ul ref={listReference} className="tabs_list">
                         {tabs.map((root, index) => {
                             const isActive = index === activeIndex;
                             const isFirst = index === 0;
@@ -110,22 +102,10 @@ export const Tabs = ({ titles, activeIndex, onNewTab }: Properties) => {
                             );
                         })}
                     </ul>
-                    {isMac && (
-                        <div
-                            style={{ borderColor }}
-                            className={`tabs_borderShim ${isFullScreen ? "tabs_borderShimUndo" : ""}`}
-                        />
-                    )}
                 </>
             )}
             <NewTabButton tabsVisible={isVisible} onNewTab={onNewTab} />
-            {isVisible && (
-                <div
-                    className="tabs_filler"
-                    style={{ borderColor }}
-                    data-tauri-drag-region={isMac ? true : undefined}
-                />
-            )}
+            {isVisible && <div className="tabs_filler" style={{ borderColor }} />}
         </nav>
     );
 };

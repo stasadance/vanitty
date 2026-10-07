@@ -4,7 +4,7 @@ import { SearchBox } from "./search-box";
 import { SplitPane } from "./split-pane";
 
 import { profileConfig, resizeGroup, setActiveSession, setSearch } from "../actions";
-import { isMac, uiScale } from "../config/keymaps";
+import { uiScale } from "../config/keymaps";
 import { popupContextMenu } from "../menu";
 import { useStore } from "../store";
 import { terms } from "../terms/registry";
@@ -12,8 +12,8 @@ import { terms } from "../terms/registry";
 export const Terms = () => {
     const tabs = useStore((s) => s.tabs);
     const activeRoot = useStore((s) => s.activeRoot);
-    // Linux and Windows draw a title bar row, plus a tab row once there are tabs.
-    const isShifted = !isMac && tabs.length > 1;
+    // A title bar row, plus a tab row once there are tabs.
+    const isShifted = tabs.length > 1;
     const top = (isShifted ? 68 : 34) * uiScale;
     return (
         <div
