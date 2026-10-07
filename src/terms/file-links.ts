@@ -11,7 +11,7 @@ const LINE_SUFFIX = /(:\d+){1,2}$/;
 const TRAILING = /[.,;:!?]+$/;
 
 /** Cmd+Click on macOS, Ctrl+Click elsewhere, like VS Code. */
-const isModifierHeld = (event: MouseEvent) => (isMac ? event.metaKey : event.ctrlKey);
+export const isModifierHeld = (event: MouseEvent) => (isMac ? event.metaKey : event.ctrlKey);
 
 /** A path-looking token: has a separator, or is a name with an extension. */
 function candidate(token: string): string | undefined {
@@ -22,7 +22,7 @@ function candidate(token: string): string | undefined {
 }
 
 /** The line's text, and the cell column each character starts at. */
-function lineText(line: IBufferLine, cols: number) {
+export function lineText(line: IBufferLine, cols: number) {
     let text = "";
     const columns: number[] = [];
     for (let x = 0; x < cols; x++) {
