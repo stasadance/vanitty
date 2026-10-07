@@ -3,14 +3,24 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 use tauri_plugin_window_state::{StateFlags, WindowExt};
 
+use crate::cli::{Launch, Launches};
+
 static NEXT: AtomicU32 = AtomicU32::new(0);
 
 /// macOS keeps its native, already rounded frame with the traffic lights laid
 /// over our title bar. Elsewhere the window is frameless and transparent so the
 /// webview draws the rounded border and the window controls itself.
 pub fn create(app: &AppHandle) -> tauri::Result<WebviewWindow> {
+    create_with(app, None)
+}
+
+/// Opens a window whose first tab is `launch`.
+pub fn create_with(app: &AppHandle, launch: Option<Launch>) -> tauri::Result<WebviewWindow> {
     let first = app.webview_windows().is_empty();
     let label = format!("main-{}", NEXT.fetch_add(1, Ordering::Relaxed));
+    if let Some(launch) = launch {
+        Launches::queue(app, &label, launch);
+    }
     let builder = WebviewWindowBuilder::new(app, label, WebviewUrl::default())
         .title("Vanitty")
         .visible(false)

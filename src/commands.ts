@@ -78,6 +78,10 @@ export const COMMANDS: Record<string, Command> = {
         const windows = await getAllWindows();
         for (const w of windows) await w.close();
     },
+    "app:installCommand": async () => {
+        const path = await invoke<string>("cli_install");
+        notify(`Installed the vanitty command at ${path}. Run vanitty --help to see what it does.`);
+    },
     "app:importHyper": async () => {
         const imported = await importHyperConfig();
         if (!imported) {

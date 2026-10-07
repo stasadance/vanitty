@@ -1,3 +1,4 @@
+mod cli;
 mod config;
 mod host;
 mod packages;
@@ -15,6 +16,7 @@ use tauri::{Manager, RunEvent, WindowEvent};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let launch = cli::start();
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -22,7 +24,10 @@ pub fn run() {
         .manage(pty::PtyManager::default())
         .manage(session::SessionStore::load())
         .manage(updater::Updater::default())
+        .manage(cli::Launches::default())
         .invoke_handler(tauri::generate_handler![
+            cli::cli_install,
+            cli::cli_take,
             pty::pty_spawn,
             pty::pty_write,
             pty::pty_resize,
@@ -59,17 +64,23 @@ pub fn run() {
                     .kill_window(webview.label());
             }
         })
-        .on_window_event(|window, event| {
-            if let WindowEvent::Destroyed = event {
+        .on_window_event(|window, event| match event {
+            WindowEvent::Focused(true) => {
+                cli::Launches::focused(window.app_handle(), window.label())
+            }
+            WindowEvent::Destroyed => {
                 window
                     .state::<pty::PtyManager>()
                     .kill_window(window.label());
                 session::SessionStore::window_closed(window.app_handle(), window.label());
+                cli::Launches::window_closed(window.app_handle(), window.label());
             }
+            _ => {}
         })
         .setup(|app| {
             config::watch(app.handle());
-            window::create(app.handle())?;
+            cli::listen(app.handle());
+            window::create_with(app.handle(), launch)?;
             Ok(())
         })
         .build(tauri::generate_context!())

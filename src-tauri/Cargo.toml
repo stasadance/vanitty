@@ -42,9 +42,13 @@ flate2 = "1"
 tar = "0.4"
 nodejs-semver = "7"
 tauri-plugin-updater = "2"
+interprocess = "2"
 
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_System_Console"] }
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]
