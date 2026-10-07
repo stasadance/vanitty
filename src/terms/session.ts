@@ -117,6 +117,11 @@ export interface RestoredScreen {
 
 const DIVIDER_ROWS = 2;
 
+/** The private part of xterm that `deferPrimarySelection` wraps. */
+interface XtermInternals {
+    _core?: { _selectionService?: { refresh(isMouseSelection?: boolean): void } };
+}
+
 export interface SessionEvents {
     onTitle(title: string): void;
     onData(data: Uint8Array): void;
@@ -207,6 +212,7 @@ export class TermSession {
             ),
         );
         term.open(this.element);
+        this.deferPrimarySelection();
         term.loadAddon(new Unicode11Addon());
         term.unicode.activeVersion = "11";
         this.applyLigatures();
@@ -358,6 +364,29 @@ export class TermSession {
         }
         this.exited = true;
         this.events.onExit();
+    }
+
+    /**
+    On Linux xterm copies the selection to the primary selection on every mouse
+    move. That takes longer than a fast mouse waits, so the selection trails it.
+    Copy it once when the button is released instead.
+    */
+    private deferPrimarySelection() {
+        const selection = (this.term as unknown as XtermInternals)._core?._selectionService;
+        if (platform !== "linux" || typeof selection?.refresh !== "function") return;
+        const refresh = selection.refresh.bind(selection);
+        let isPending = false;
+        selection.refresh = (isMouseSelection) => {
+            isPending ||= isMouseSelection === true;
+            refresh(false);
+        };
+        const onMouseUp = () => {
+            if (!isPending) return;
+            isPending = false;
+            refresh(true);
+        };
+        window.addEventListener("mouseup", onMouseUp);
+        this.disposables.push({ dispose: () => window.removeEventListener("mouseup", onMouseUp) });
     }
 
     /** Padding goes on xterm's own element so the fit addon accounts for it. */
