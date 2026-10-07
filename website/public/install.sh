@@ -45,31 +45,36 @@ sha256() {
   fi
 }
 
-# Fetches the release once; sets $version.
-load_release() {
+# Fetches the releases once. Without VANITTY_VERSION that's the newest few,
+# so a release whose files are still being built falls back to the one before.
+load_releases() {
   if [ -n "${VANITTY_VERSION:-}" ]; then
     api="https://api.github.com/repos/$REPO/releases/tags/v${VANITTY_VERSION#v}"
   else
-    api="https://api.github.com/repos/$REPO/releases/latest"
+    api="https://api.github.com/repos/$REPO/releases?per_page=10"
   fi
-  release=$(fetch -H 'Accept: application/vnd.github+json' "$api" 2> /dev/null) \
+  releases=$(fetch -H 'Accept: application/vnd.github+json' "$api" 2> /dev/null) \
     || die "Couldn't find the release at $api"
-  version=$(printf '%s\n' "$release" | grep -oE '"tag_name": *"[^"]*"' | head -n 1 | sed -E 's/.*"v?([^"]*)"$/\1/')
 }
 
-# Prints "<url> <size> <sha256>" for the release asset whose name ends with $1.
+# Prints "<version> <url> <size> <sha256>" for the asset whose name ends with
+# $1, from the newest release that has one. Skips prereleases unless asked for
+# by VANITTY_VERSION.
 find_asset() {
-  printf '%s\n' "$release" \
-    | grep -oE '"(url|name|digest|browser_download_url)": *"[^"]*"|"size": *[0-9]+' \
+  printf '%s\n' "$releases" \
+    | grep -oE '"(url|name|tag_name|digest|browser_download_url)": *"[^"]*"|"size": *[0-9]+|"prerelease": *(true|false)' \
     | sed -E 's/^"([a-z_]+)": *"?([^"]*)"?$/\1 \2/' \
-    | awk -v suffix="$1" '
+    | awk -v suffix="$1" -v pinned="${VANITTY_VERSION:-}" '
         function flush() {
-          if (name != "" && substr(name, length(name) - length(suffix) + 1) == suffix) {
-            sub(/^sha256:/, "", digest); print url, size, digest; found = 1; exit
+          if (name != "" && substr(name, length(name) - length(suffix) + 1) == suffix && (!pre || pinned != "")) {
+            sub(/^v/, "", tag); sub(/^sha256:/, "", digest); print tag, url, size, digest; found = 1; exit
           }
           name = ""; url = ""; digest = ""; size = 0
         }
+        $1 == "url" && $2 ~ /\/releases\/[0-9]+$/ { flush(); tag = ""; pre = 0 }
         $1 == "url" && $2 ~ /\/releases\/assets\// { flush() }
+        $1 == "tag_name" { tag = $2 }
+        $1 == "prerelease" { pre = ($2 == "true") }
         $1 == "name" { name = $2 }
         $1 == "size" { size = $2 }
         $1 == "digest" { digest = $2 }
@@ -78,9 +83,25 @@ find_asset() {
       '
 }
 
-download() {
+# Picks the release to install for files ending with $1; sets $version and
+# $asset.
+pick_release() {
+  load_releases
   asset=$(find_asset "$1")
-  [ -n "$asset" ] || die "This release has no $1 file. See https://github.com/$REPO/releases"
+  [ -n "$asset" ] || die "No release has a $1 file yet. See https://github.com/$REPO/releases"
+  version=${asset%% *}
+  asset=${asset#* }
+  newest=$(printf '%s\n' "$releases" \
+    | grep -oE '"tag_name": *"[^"]*"|"prerelease": *(true|false)' \
+    | sed -E 's/^"([a-z_]+)": *"?([^"]*)"?$/\1 \2/' \
+    | awk '$1 == "tag_name" { tag = $2 } $1 == "prerelease" && $2 == "false" { sub(/^v/, "", tag); print tag; exit }')
+  if [ -n "$newest" ] && [ "$newest" != "$version" ]; then
+    note "Vanitty $newest is still being built, so installing $version instead."
+  fi
+}
+
+# Downloads $asset (from pick_release) to $1 and checks its SHA-256.
+download() {
   url=${asset%% *}
   rest=${asset#* }
   size=${rest%% *}
@@ -88,13 +109,13 @@ download() {
   printf '  %s↓%s Downloading %s %s(%s MB)%s\n' "$MAGENTA" "$RESET" "${url##*/}" "$DIM" "$((size / 1048576))" "$RESET"
   # A progress bar on a terminal, nothing when piped to a log.
   if [ -t 2 ]; then
-    curl -fL --proto '=https' --tlsv1.2 --retry 3 --progress-bar -o "$2" "$url" \
+    curl -fL --proto '=https' --tlsv1.2 --retry 3 --progress-bar -o "$1" "$url" \
       || die "Download failed: $url"
   else
-    fetch -o "$2" "$url" || die "Download failed: $url"
+    fetch -o "$1" "$url" || die "Download failed: $url"
   fi
   if [ -n "$digest" ]; then
-    [ "$(sha256 "$2")" = "$digest" ] || die "Checksum mismatch for ${url##*/}. The download may be corrupted; try again."
+    [ "$(sha256 "$1")" = "$digest" ] || die "Checksum mismatch for ${url##*/}. The download may be corrupted; try again."
     step "Verified the SHA-256 checksum"
   fi
 }
@@ -118,9 +139,9 @@ mac_target() {
 
 install_mac() {
   dest=$(mac_target)
-  load_release
+  pick_release .dmg
   step "Found Vanitty $version for macOS (Apple Silicon and Intel)"
-  download .dmg "$tmp/vanitty.dmg"
+  download "$tmp/vanitty.dmg"
   mnt="$tmp/mnt"
   mkdir -p "$mnt" "$dest"
   hdiutil attach -quiet -nobrowse -readonly -mountpoint "$mnt" "$tmp/vanitty.dmg"
@@ -158,9 +179,9 @@ OLD_ICON="$DATA/icons/hicolor/128x128/apps/vanitty.png"
 install_linux() {
   [ "$(uname -m)" = x86_64 ] || die "Only x86_64 Linux builds are published. See https://vanitty.dev/docs/develop/ to build from source."
   appimage="$APP_DIR/Vanitty.AppImage"
-  load_release
+  pick_release .AppImage
   step "Found Vanitty $version for Linux x86_64"
-  download .AppImage "$tmp/Vanitty.AppImage"
+  download "$tmp/Vanitty.AppImage"
   chmod +x "$tmp/Vanitty.AppImage"
   mkdir -p "$APP_DIR" "$(dirname "$BIN")" "$(dirname "$DESKTOP")"
   mv -f "$tmp/Vanitty.AppImage" "$appimage"
@@ -241,7 +262,7 @@ done
 has curl || die "curl is required"
 
 say ""
-say "  ${MAGENTA}${BOLD}V_${RESET} ${BOLD}Vanitty${RESET} ${DIM}${action}er${RESET}"
+say "  ${BOLD}>${MAGENTA}_${RESET} ${BOLD}Vanitty${RESET} ${DIM}${action}er${RESET}"
 say ""
 
 case "$(uname -s)" in

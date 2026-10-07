@@ -1,7 +1,7 @@
 {
     "name": "vanitty",
     "private": true,
-    "version": "26.10.6",
+    "version": "26.10.7",
     "type": "module",
     "scripts": {
         "dev": "vite",
@@ -20,7 +20,6 @@
         "@xterm/addon-clipboard": "^0.2.0",
         "@xterm/addon-fit": "^0.11.0",
         "@xterm/addon-image": "^0.9.0",
-        "@xterm/addon-ligatures": "^0.10.0",
         "@xterm/addon-search": "^0.16.0",
         "@xterm/addon-serialize": "^0.14.0",
         "@xterm/addon-unicode11": "^0.9.0",

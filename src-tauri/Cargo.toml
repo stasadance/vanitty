@@ -1,6 +1,6 @@
 [package]
 name = "vanitty"
-version = "26.10.6"
+version = "26.10.7"
 description = "A fast, native terminal built with Rust and Tauri"
 license = "MIT"
 edition = "2024"
@@ -44,7 +44,7 @@ nodejs-semver = "7"
 tauri-plugin-updater = "2"
 interprocess = "2"
 
-[target.'cfg(target_os = "macos")'.dependencies]
+[target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 libc = "0.2"
 
 [target.'cfg(windows)'.dependencies]

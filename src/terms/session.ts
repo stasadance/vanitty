@@ -3,7 +3,6 @@ import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { ClipboardAddon, type IClipboardProvider } from "@xterm/addon-clipboard";
 import { FitAddon } from "@xterm/addon-fit";
 import { ImageAddon } from "@xterm/addon-image";
-import { LigaturesAddon } from "@xterm/addon-ligatures";
 import { type ISearchOptions, SearchAddon } from "@xterm/addon-search";
 import { SerializeAddon } from "@xterm/addon-serialize";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
@@ -14,6 +13,7 @@ import Color from "color";
 
 import { DEFAULT_BELL } from "./bell";
 import { fileLinkProvider } from "./file-links";
+import { ligatureRanges } from "./ligatures";
 import {
     type Exited,
     killPty,
@@ -117,6 +117,11 @@ export interface RestoredScreen {
 
 const DIVIDER_ROWS = 2;
 
+/** The private part of xterm that `deferPrimarySelection` wraps. */
+interface XtermInternals {
+    _core?: { _selectionService?: { refresh(isMouseSelection?: boolean): void } };
+}
+
 export interface SessionEvents {
     onTitle(title: string): void;
     onData(data: Uint8Array): void;
@@ -141,7 +146,8 @@ export class TermSession {
     private search = new SearchAddon();
     private serializer = new SerializeAddon();
     private webgl?: WebglAddon;
-    private ligatures?: LigaturesAddon;
+    /** The ligature joiner's id while ligatures are on. */
+    private ligatures?: number;
     private image?: ImageAddon;
     private disposables: IDisposable[] = [];
     private bell: HTMLAudioElement | null = null;
@@ -206,6 +212,7 @@ export class TermSession {
             ),
         );
         term.open(this.element);
+        this.deferPrimarySelection();
         term.loadAddon(new Unicode11Addon());
         term.unicode.activeVersion = "11";
         this.applyLigatures();
@@ -359,6 +366,29 @@ export class TermSession {
         this.events.onExit();
     }
 
+    /**
+    On Linux xterm copies the selection to the primary selection on every mouse
+    move. That takes longer than a fast mouse waits, so the selection trails it.
+    Copy it once when the button is released instead.
+    */
+    private deferPrimarySelection() {
+        const selection = (this.term as unknown as XtermInternals)._core?._selectionService;
+        if (platform !== "linux" || typeof selection?.refresh !== "function") return;
+        const refresh = selection.refresh.bind(selection);
+        let isPending = false;
+        selection.refresh = (isMouseSelection) => {
+            isPending ||= isMouseSelection === true;
+            refresh(false);
+        };
+        const onMouseUp = () => {
+            if (!isPending) return;
+            isPending = false;
+            refresh(true);
+        };
+        window.addEventListener("mouseup", onMouseUp);
+        this.disposables.push({ dispose: () => window.removeEventListener("mouseup", onMouseUp) });
+    }
+
     /** Padding goes on xterm's own element so the fit addon accounts for it. */
     private applyPadding() {
         if (!this.term.element) return;
@@ -370,16 +400,14 @@ export class TermSession {
 
     /** Must run before the WebGL addon loads so its atlas gets the font features. */
     private applyLigatures() {
-        if (!this.config.disableLigatures && !this.ligatures) {
-            try {
-                this.ligatures = new LigaturesAddon();
-                this.term.loadAddon(this.ligatures);
-            } catch {
-                this.ligatures = undefined;
-            }
-        } else if (this.config.disableLigatures && this.ligatures) {
-            this.ligatures.dispose();
+        const style = this.term.element?.style;
+        if (!this.config.disableLigatures && this.ligatures === undefined) {
+            this.ligatures = this.term.registerCharacterJoiner(ligatureRanges);
+            if (style) style.fontFeatureSettings = '"calt" on';
+        } else if (this.config.disableLigatures && this.ligatures !== undefined) {
+            this.term.deregisterCharacterJoiner(this.ligatures);
             this.ligatures = undefined;
+            if (style) style.fontFeatureSettings = "";
         }
     }
 
