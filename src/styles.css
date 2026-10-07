@@ -176,27 +176,6 @@ body,
     border-bottom: 1px solid;
 }
 
-.tabs_listMac {
-    margin-left: 76px;
-}
-
-.tabs_fullScreen {
-    margin-left: -1px;
-}
-
-.tabs_borderShim {
-    position: absolute;
-    width: 76px;
-    bottom: 0;
-    border-color: #ccc;
-    border-bottom-style: solid;
-    border-bottom-width: 1px;
-}
-
-.tabs_borderShimUndo {
-    border-bottom-width: 0;
-}
-
 .tab_tab {
     color: #ccc;
     border-color: #ccc;
@@ -739,6 +718,71 @@ body,
     background: transparent;
     color: inherit;
     font: inherit;
+}
+
+/* ssh:// link prompt */
+
+.ssh_prompt_backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.ssh_prompt {
+    zoom: var(--ui-scale, 1);
+    margin-top: 44px;
+    width: min(420px, calc(100% - 32px));
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    border: 1px solid;
+    border-radius: 8px;
+    font-size: 13px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.ssh_prompt_title {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.ssh_prompt_note {
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.ssh_prompt_command {
+    padding: 6px 8px;
+    border: 1px solid;
+    border-radius: 4px;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.ssh_prompt_buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.ssh_prompt_button {
+    padding: 5px 14px;
+    border: 1px solid;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.ssh_prompt_button:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 1px;
 }
 
 /* Notifications */

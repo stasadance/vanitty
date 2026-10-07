@@ -23,6 +23,7 @@ import {
     spawnPty,
     writePty,
 } from "./pty";
+import { type SshLink, sshLinkProvider } from "./ssh-links";
 
 import { platform, uiScale } from "../config/keymaps";
 import { orElse } from "../helpers";
@@ -124,6 +125,7 @@ export interface SessionEvents {
     onUse(): void;
     onExit(): void;
     onFocus(): void;
+    onSshLink(link: SshLink): void;
     onSearchResults(results: { resultIndex: number; resultCount: number } | undefined): void;
 }
 
@@ -145,6 +147,7 @@ export class TermSession {
     private bell: HTMLAudioElement | null = null;
     private opened = false;
     private exited = false;
+    private held = false;
     private resizeTimer?: ReturnType<typeof setTimeout>;
     private dividers: { marker: IMarker; at: number }[] = [];
     readonly term: Terminal;
@@ -163,6 +166,8 @@ export class TermSession {
         private onSpawned: (shell: string, ptyId: number) => void,
         /** Screen text from the last run, shown above the new shell. */
         private restored?: RestoredScreen,
+        /** Keeps the tab open when the program fails, so its error stays readable. */
+        private shouldHoldOnError = false,
     ) {
         this.config = config;
         this.fontSize = fontSize;
@@ -192,6 +197,13 @@ export class TermSession {
                     (error) => notify(error, true),
                 ),
             ),
+            term.registerLinkProvider(
+                sshLinkProvider(
+                    term,
+                    (link) => this.events.onSshLink(link),
+                    (error) => notify(error, true),
+                ),
+            ),
         );
         term.open(this.element);
         term.loadAddon(new Unicode11Addon());
@@ -218,6 +230,11 @@ export class TermSession {
             term.onBell(() => void this.bell?.play().catch(() => {})),
             term.onKey(() => this.events.onUse()),
             term.onData((data) => {
+                if (this.held) {
+                    this.exited = true;
+                    this.events.onExit();
+                    return;
+                }
                 this.write(data);
                 this.events.onInput(data);
             }),
@@ -316,6 +333,12 @@ export class TermSession {
         isFallback: boolean,
     ) {
         if (this.exited) return;
+        if (this.shouldHoldOnError && exited.code !== 0) {
+            this.ptyId = undefined;
+            this.held = true;
+            this.term.write(`\r\n[Exited with code ${exited.code}. Press any key to close.]\r\n`);
+            return;
+        }
         // A shell that dies at once is likely misconfigured: say so, use the default.
         if (
             !isFallback &&

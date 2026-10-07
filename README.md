@@ -11,7 +11,7 @@
 
 - Tabs (drag to reorder), split panes (drag dividers, double-click to even them out), pane and tab navigation
 - Search in scrollback (case, whole word, regex)
-- Clickable links, Cmd/Ctrl+Click to open file paths, inline images, Unicode 11 widths, WebGL rendering
+- Clickable links, Cmd/Ctrl+Click to open file paths and `ssh://` links (asks first), inline images, Unicode 11 widths, WebGL rendering
 - Ships with FiraCode Nerd Font Mono, with ligatures (`disableLigatures` turns them off)
 - Profiles: per-profile shell, args, env and colors, picked from the new-tab menu
 - New tabs and splits open in the current directory (`preserveCWD`, macOS and Linux)

@@ -4,6 +4,8 @@ import { type Config, DEFAULT_CONFIG } from "../config/defaults";
 import { buildKeymap } from "../config/keymaps";
 import { counter } from "../helpers";
 
+import type { SshLink } from "../terms/ssh-links";
+
 export type Direction = "horizontal" | "vertical";
 
 export interface Session {
@@ -60,6 +62,8 @@ export interface State {
     headerItems: Record<string, HeaderItem>;
     themePicker: boolean;
     layoutPicker: "save" | "open" | null;
+    /** An `ssh://` link waiting for the user to confirm it. */
+    sshPrompt: { link: SshLink; profile: string } | null;
     /** Config problems currently shown, so each shows once. */
     configErrors: string[];
     /** When a pane was last resized by hand; its output then isn't activity. */
@@ -81,6 +85,7 @@ export const useStore = create<State>()(() => ({
     headerItems: {},
     themePicker: false,
     layoutPicker: null,
+    sshPrompt: null,
     configErrors: [],
     resizedAt: 0,
 }));

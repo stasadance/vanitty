@@ -6,7 +6,7 @@ use tauri_plugin_window_state::{StateFlags, WindowExt};
 static NEXT: AtomicU32 = AtomicU32::new(0);
 
 /// macOS keeps its native, already rounded frame with the traffic lights laid
-/// over our tab bar. Elsewhere the window is frameless and transparent so the
+/// over our title bar. Elsewhere the window is frameless and transparent so the
 /// webview draws the rounded border and the window controls itself.
 pub fn create(app: &AppHandle) -> tauri::Result<WebviewWindow> {
     let first = app.webview_windows().is_empty();
