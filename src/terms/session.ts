@@ -3,7 +3,6 @@ import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { ClipboardAddon, type IClipboardProvider } from "@xterm/addon-clipboard";
 import { FitAddon } from "@xterm/addon-fit";
 import { ImageAddon } from "@xterm/addon-image";
-import { LigaturesAddon } from "@xterm/addon-ligatures";
 import { type ISearchOptions, SearchAddon } from "@xterm/addon-search";
 import { SerializeAddon } from "@xterm/addon-serialize";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
@@ -14,6 +13,7 @@ import Color from "color";
 
 import { DEFAULT_BELL } from "./bell";
 import { fileLinkProvider } from "./file-links";
+import { ligatureRanges } from "./ligatures";
 import {
     type Exited,
     killPty,
@@ -141,7 +141,8 @@ export class TermSession {
     private search = new SearchAddon();
     private serializer = new SerializeAddon();
     private webgl?: WebglAddon;
-    private ligatures?: LigaturesAddon;
+    /** The ligature joiner's id while ligatures are on. */
+    private ligatures?: number;
     private image?: ImageAddon;
     private disposables: IDisposable[] = [];
     private bell: HTMLAudioElement | null = null;
@@ -370,16 +371,14 @@ export class TermSession {
 
     /** Must run before the WebGL addon loads so its atlas gets the font features. */
     private applyLigatures() {
-        if (!this.config.disableLigatures && !this.ligatures) {
-            try {
-                this.ligatures = new LigaturesAddon();
-                this.term.loadAddon(this.ligatures);
-            } catch {
-                this.ligatures = undefined;
-            }
-        } else if (this.config.disableLigatures && this.ligatures) {
-            this.ligatures.dispose();
+        const style = this.term.element?.style;
+        if (!this.config.disableLigatures && this.ligatures === undefined) {
+            this.ligatures = this.term.registerCharacterJoiner(ligatureRanges);
+            if (style) style.fontFeatureSettings = '"calt" on';
+        } else if (this.config.disableLigatures && this.ligatures !== undefined) {
+            this.term.deregisterCharacterJoiner(this.ligatures);
             this.ligatures = undefined;
+            if (style) style.fontFeatureSettings = "";
         }
     }
 
