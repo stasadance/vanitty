@@ -28,6 +28,11 @@
         "macOS": {
             "signingIdentity": "-"
         },
+        "linux": {
+            "appimage": {
+                "bundleMediaFramework": true
+            }
+        },
         "createUpdaterArtifacts": true
     },
     "plugins": {
