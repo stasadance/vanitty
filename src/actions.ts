@@ -52,6 +52,7 @@ export async function newSession(
     profileName: string | undefined,
     restored?: RestoredPane,
     command?: Command,
+    launchCwd?: string,
 ): Promise<string> {
     const s = getState();
     const profile =
@@ -65,6 +66,8 @@ export async function newSession(
     const activePty = active ? terms.get(active)?.ptyId : undefined;
     if (restored) {
         cwd = restored.cwd || cwd;
+    } else if (launchCwd) {
+        cwd = launchCwd;
     } else if (activePty !== undefined && s.config.preserveCWD) {
         cwd = (await orElse(ptyCwd(activePty), null)) || cwd;
     }
@@ -147,8 +150,8 @@ function updateSession(sessionUid: string, patch: Partial<State["sessions"][stri
     });
 }
 
-export async function newTab(profile?: string, command?: Command) {
-    const sessionUid = await newSession(profile, undefined, command);
+export async function newTab(profile?: string, command?: Command, cwd?: string) {
+    const sessionUid = await newSession(profile, undefined, command, cwd);
     const groupUid = uid("g");
     setState((st) => ({
         groups: {

@@ -145,6 +145,7 @@ export async function installAppMenu() {
             await PredefinedMenuItem.new({ item: { About: { name: "Vanitty" } } }),
             await separator(),
             await item("Settings…", "window:preferences"),
+            await item("Install vanitty Command…", "app:installCommand"),
             await separator(),
             await PredefinedMenuItem.new({ item: "Hide" }),
             await PredefinedMenuItem.new({ item: "HideOthers" }),
