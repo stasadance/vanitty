@@ -31,23 +31,34 @@ function Install-Vanitty {
 
     Write-Host ""
     Write-Host "  " -NoNewline
-    if ($color) { Write-Host "V_" -ForegroundColor Magenta -NoNewline } else { Write-Host "V_" -NoNewline }
+    if ($color) { Write-Host ">_" -ForegroundColor Magenta -NoNewline } else { Write-Host ">_" -NoNewline }
     Write-Host " Vanitty installer"
     Write-Host ""
 
+    # Without VANITTY_VERSION, look at the newest few releases, so a release
+    # whose files are still being built falls back to the one before.
     if ($env:VANITTY_VERSION) {
         $api = "https://api.github.com/repos/$repo/releases/tags/v$($env:VANITTY_VERSION.TrimStart('v'))"
     } else {
-        $api = "https://api.github.com/repos/$repo/releases/latest"
+        $api = "https://api.github.com/repos/$repo/releases?per_page=10"
     }
     try {
-        $release = Invoke-RestMethod -Uri $api -Headers @{ Accept = "application/vnd.github+json" }
+        # Unwrap the array, which Windows PowerShell 5.1 returns as one object.
+        $releases = @(Invoke-RestMethod -Uri $api -Headers @{ Accept = "application/vnd.github+json" } | ForEach-Object { $_ })
     } catch {
         return Fail "Couldn't find the release at $api"
     }
+    if (-not $env:VANITTY_VERSION) { $releases = @($releases | Where-Object { -not $_.prerelease }) }
+    $release = $null
+    $asset = $null
+    foreach ($candidate in $releases) {
+        $asset = $candidate.assets | Where-Object { $_.name -like "*-setup.exe" } | Select-Object -First 1
+        if ($asset) { $release = $candidate; break }
+    }
+    if (-not $asset) { return Fail "No release has a setup.exe yet. See https://github.com/$repo/releases" }
     $version = $release.tag_name.TrimStart("v")
-    $asset = $release.assets | Where-Object { $_.name -like "*-setup.exe" } | Select-Object -First 1
-    if (-not $asset) { return Fail "This release has no setup.exe. See $($release.html_url)" }
+    $newest = $releases[0].tag_name.TrimStart("v")
+    if ($newest -ne $version) { Note "Vanitty $newest is still being built, so installing $version instead." }
 
     Step "Found Vanitty $version for Windows x64"
     if ($env:PROCESSOR_ARCHITECTURE -ne "AMD64") {
