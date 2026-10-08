@@ -4573,7 +4573,7 @@ dependencies = [
 
 [[package]]
 name = "vanitty"
-version = "26.10.7"
+version = "26.10.8"
 dependencies = [
  "dirs",
  "flate2",
