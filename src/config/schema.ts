@@ -109,6 +109,9 @@ export const SETTINGS_SCHEMA = {
         restoreSession: bool(
             "Reopen your windows, tabs, splits, folders and terminal text on launch. When off, Shell > Reopen Last Session brings them back.",
         ),
+        restorePaneHistory: bool(
+            "In bash, keep each pane's commands so a reopened pane gets them back on the up arrow.",
+        ),
         defaultProfile: text("Profile used for new tabs."),
         profiles: {
             type: "array",

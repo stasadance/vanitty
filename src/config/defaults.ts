@@ -74,6 +74,7 @@ export interface Config extends TermConfig {
     preserveCWD: boolean;
     disableAutoUpdates: boolean;
     restoreSession: boolean;
+    restorePaneHistory: boolean;
     defaultProfile: string;
     profiles: Profile[];
     /** A Vanitty theme: built in, or a JSON file in the `themes` folder. */
@@ -153,6 +154,7 @@ export const DEFAULT_CONFIG: Config = {
     preserveCWD: true,
     disableAutoUpdates: false,
     restoreSession: false,
+    restorePaneHistory: true,
     defaultProfile: "default",
     profiles: [{ name: "default", config: {} }],
     colorTheme: "",
