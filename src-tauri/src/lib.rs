@@ -1,5 +1,6 @@
 mod cli;
 mod config;
+mod history;
 mod host;
 mod packages;
 mod pty;
