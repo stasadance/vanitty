@@ -7,6 +7,8 @@ export interface SpawnOptions {
     shellArgs?: string[];
     cwd?: string;
     env?: Record<string, string>;
+    /** The pane this shell runs in, so bash can keep that pane's history. */
+    pane?: string;
 }
 
 export interface Spawned {

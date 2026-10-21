@@ -7,7 +7,7 @@
 //! tab) send no snapshot, so a run with only those doesn't push out a real
 //! session.
 
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{BTreeMap, HashSet, VecDeque};
 use std::path::PathBuf;
 use std::sync::Mutex;
 
@@ -71,6 +71,13 @@ impl SessionStore {
             history.push_front(saved.windows);
         }
         history.truncate(HISTORY);
+        let panes: HashSet<&str> = history
+            .iter()
+            .flatten()
+            .filter_map(|w| w.get("panes")?.as_object())
+            .flat_map(|p| p.keys().map(String::as_str))
+            .collect();
+        crate::history::prune(&panes);
         Self(Mutex::new(Inner {
             history,
             ..Default::default()
