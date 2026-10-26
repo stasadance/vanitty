@@ -25,10 +25,6 @@ export function lockdown() {
     }
 }
 
-// A CommonJS module can export anything.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Module = { exports: any };
-
 function dirname(p: string) {
     const index = p.lastIndexOf("/");
     return index === -1 ? "" : p.slice(0, index);
@@ -45,6 +41,9 @@ function join(...parts: string[]) {
 }
 
 export function makeRequire(sources: Record<string, string>, platform: string) {
+    // A CommonJS module can export anything.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    type Module = { exports: any };
     const cache = new Map<string, Module>();
     const builtins: Record<string, unknown> = {
         path: {

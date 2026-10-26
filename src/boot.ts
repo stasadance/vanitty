@@ -4,7 +4,7 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { activeTerm, applyConfigToTerms, newTab } from "./actions";
-import { COMMAND_IDS, commandAllowedInInput, inInput, runCommand } from "./commands";
+import { COMMAND_IDS, commandAllowedInInput, isInInput, runCommand } from "./commands";
 import { eventKey, platform } from "./config/keymaps";
 import { ensureConfigFiles, loadConfig } from "./config/load";
 import { once, orElse, serial } from "./helpers";
@@ -70,7 +70,7 @@ function onKeyDown(event: KeyboardEvent) {
     if (!key) return;
     const command = getState().keymap.get(key);
     if (!command) return;
-    if (inInput() && !commandAllowedInInput(command)) return;
+    if (isInInput() && !commandAllowedInInput(command)) return;
     if (!runCommand(command)) return;
     event.preventDefault();
     event.stopPropagation();
