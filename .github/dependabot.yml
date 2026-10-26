@@ -4,6 +4,10 @@ updates:
       directory: /
       schedule:
           interval: monthly
+      ignore:
+          # TypeScript 7 breaks the build. Bump it by hand when we're ready.
+          - dependency-name: typescript
+            update-types: ["version-update:semver-major"]
       groups:
           npm-security:
               applies-to: security-updates
