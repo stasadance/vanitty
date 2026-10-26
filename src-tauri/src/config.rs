@@ -24,32 +24,39 @@ pub fn config_dir() -> PathBuf {
     }
 }
 
-fn hyper_config_dir() -> PathBuf {
-    if let Some(xdg) = std::env::var_os("XDG_CONFIG_HOME").filter(|v| !v.is_empty()) {
-        return PathBuf::from(xdg).join("Hyper");
+/// Where Hyper keeps its config, most likely first: `hyper.json` (Hyper 4)
+/// and `.hyper.js` (Hyper 3) in its app data folder, `$XDG_CONFIG_HOME/Hyper`
+/// when set, then the pre-3.0 `~/.hyper.js`.
+fn hyper_config_candidates(
+    xdg: Option<PathBuf>,
+    app_data: Option<PathBuf>,
+    home: Option<PathBuf>,
+) -> Vec<(PathBuf, &'static str)> {
+    let mut dirs: Vec<PathBuf> = Vec::new();
+    if let Some(xdg) = &xdg {
+        dirs.push(xdg.join("Hyper"));
     }
-    if cfg!(windows) {
-        dirs::config_dir().unwrap_or_default().join("Hyper")
-    } else {
-        std::env::home_dir()
-            .unwrap_or_default()
-            .join(".config")
-            .join("Hyper")
+    if let Some(app_data) = app_data {
+        dirs.push(app_data.join("Hyper"));
     }
-}
+    // Earlier Vanitty looked for hyper.json here on macOS too.
+    if let Some(home) = &home {
+        dirs.push(home.join(".config").join("Hyper"));
+    }
+    dirs.dedup();
 
-fn legacy_hyper_js() -> PathBuf {
-    if let Some(xdg) = std::env::var_os("XDG_CONFIG_HOME").filter(|v| !v.is_empty()) {
-        return PathBuf::from(xdg).join("hyper").join(".hyper.js");
+    let mut candidates: Vec<(PathBuf, &'static str)> = Vec::new();
+    for dir in &dirs {
+        candidates.push((dir.join("hyper.json"), "json"));
+        candidates.push((dir.join(".hyper.js"), "js"));
     }
-    if cfg!(windows) {
-        dirs::config_dir()
-            .unwrap_or_default()
-            .join("Hyper")
-            .join(".hyper.js")
-    } else {
-        std::env::home_dir().unwrap_or_default().join(".hyper.js")
+    if let Some(xdg) = &xdg {
+        candidates.push((xdg.join("hyper").join(".hyper.js"), "js"));
     }
+    if let Some(home) = &home {
+        candidates.push((home.join(".hyper.js"), "js"));
+    }
+    candidates
 }
 
 /// Only plain file names inside the config dir are reachable from the webview.
@@ -109,10 +116,10 @@ pub struct HyperConfig {
 /// Finds an existing Hyper config to import from.
 #[tauri::command]
 pub fn hyper_config_find() -> Option<HyperConfig> {
-    let candidates = [
-        (hyper_config_dir().join("hyper.json"), "json"),
-        (legacy_hyper_js(), "js"),
-    ];
+    let xdg = std::env::var_os("XDG_CONFIG_HOME")
+        .filter(|v| !v.is_empty())
+        .map(PathBuf::from);
+    let candidates = hyper_config_candidates(xdg, dirs::config_dir(), std::env::home_dir());
     candidates.into_iter().find_map(|(path, kind)| {
         let contents = std::fs::read_to_string(&path).ok()?;
         Some(HyperConfig {
@@ -161,4 +168,71 @@ pub fn config_open(name: &str, fallback: &str) -> Result<(), String> {
         config_write(name, fallback)?;
     }
     crate::host::open_in_editor(&path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn paths(candidates: Vec<(PathBuf, &'static str)>) -> Vec<PathBuf> {
+        candidates.into_iter().map(|(path, _)| path).collect()
+    }
+
+    #[test]
+    fn hyper_config_on_macos_is_in_application_support() {
+        let home = PathBuf::from("/Users/me");
+        let app_data = home.join("Library/Application Support");
+        let found = paths(hyper_config_candidates(
+            None,
+            Some(app_data.clone()),
+            Some(home.clone()),
+        ));
+        assert_eq!(found[0], app_data.join("Hyper/hyper.json"));
+        assert_eq!(found[1], app_data.join("Hyper/.hyper.js"));
+        assert_eq!(found.last(), Some(&home.join(".hyper.js")));
+    }
+
+    #[test]
+    fn hyper_config_on_linux_is_in_dot_config() {
+        let home = PathBuf::from("/home/me");
+        let found = paths(hyper_config_candidates(
+            None,
+            Some(home.join(".config")),
+            Some(home.clone()),
+        ));
+        assert_eq!(
+            found,
+            vec![
+                home.join(".config/Hyper/hyper.json"),
+                home.join(".config/Hyper/.hyper.js"),
+                home.join(".hyper.js"),
+            ]
+        );
+    }
+
+    #[test]
+    fn hyper_config_prefers_xdg_config_home() {
+        let home = PathBuf::from("/home/me");
+        let xdg = PathBuf::from("/xdg");
+        let found = paths(hyper_config_candidates(
+            Some(xdg.clone()),
+            Some(home.join(".config")),
+            Some(home),
+        ));
+        assert_eq!(found[0], xdg.join("Hyper/hyper.json"));
+        assert!(found.contains(&xdg.join("hyper/.hyper.js")));
+    }
+
+    #[test]
+    fn hyper_config_on_windows_is_in_appdata() {
+        let home = PathBuf::from(r"C:\Users\me");
+        let app_data = home.join(r"AppData\Roaming");
+        let found = paths(hyper_config_candidates(
+            None,
+            Some(app_data.clone()),
+            Some(home.clone()),
+        ));
+        assert_eq!(found[1], app_data.join("Hyper").join(".hyper.js"));
+        assert_eq!(found.last(), Some(&home.join(".hyper.js")));
+    }
 }
