@@ -40,6 +40,8 @@ pub struct SpawnOptions {
     cwd: Option<String>,
     #[serde(default)]
     env: HashMap<String, String>,
+    /// The pane this shell runs in, so bash can keep that pane's history.
+    pane: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -118,7 +120,14 @@ pub fn pty_spawn(
         .shell
         .filter(|s| !s.is_empty())
         .unwrap_or_else(default_shell);
-    let args = options.shell_args.unwrap_or_else(default_args);
+    let mut args = options.shell_args.unwrap_or_else(default_args);
+    let mut history_env = Vec::new();
+    if let Some(pane) = &options.pane
+        && let Some(bash) = crate::history::bash(&shell, &args, pane)
+    {
+        args = bash.args;
+        history_env = bash.env;
+    }
 
     let mut cmd = CommandBuilder::new(&shell);
     cmd.args(&args);
@@ -136,6 +145,9 @@ pub fn pty_spawn(
         cmd.env("LANG", "en_US.UTF-8");
     }
     for (k, v) in &options.env {
+        cmd.env(k, v);
+    }
+    for (k, v) in history_env {
         cmd.env(k, v);
     }
     if let Some(cwd) = resolve_cwd(options.cwd) {

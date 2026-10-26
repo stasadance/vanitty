@@ -83,6 +83,7 @@ export async function newSession(
             shellArgs: command?.shellArgs ?? (config.shell ? config.shellArgs : undefined),
             cwd,
             env: config.env,
+            pane: command || !s.config.restorePaneHistory ? undefined : sessionUid,
         },
         {
             onTitle: (title) => {
