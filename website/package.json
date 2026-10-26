@@ -8,8 +8,8 @@
         "preview": "astro preview"
     },
     "dependencies": {
-        "@astrojs/starlight": "^0.42.5",
-        "astro": "^7.3.5",
+        "@astrojs/starlight": "^0.42.7",
+        "astro": "^7.4.2",
         "sharp": "^0.35.5"
     },
     "packageManager": "pnpm@10.28.0"
