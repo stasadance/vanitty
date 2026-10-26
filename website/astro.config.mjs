@@ -37,6 +37,18 @@ export default defineConfig({
                 },
                 { label: "Extending", items: ["docs/plugins"] },
                 { label: "Contributing", items: ["docs/develop"] },
+                {
+                    label: "Blog",
+                    items: [
+                        "blog/cross-platform-terminal",
+                        "blog/restore-terminal-tabs",
+                        "blog/lightweight-terminal",
+                        "blog/hyper-terminal-alternative",
+                        "blog/is-hyper-terminal-still-maintained",
+                        "blog/migrate-from-hyper",
+                        "blog/hyper-vs-vanitty",
+                    ],
+                },
             ],
         }),
     ],
