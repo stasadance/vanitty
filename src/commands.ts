@@ -28,7 +28,7 @@ type Command = (argument?: string) => void | boolean | Promise<unknown>;
 const send = (data: string) => () => activeTerm()?.write(data);
 
 /** Is focus in one of our own text inputs (not a terminal)? */
-const inInput = () => {
+const isInInput = () => {
     const element = document.activeElement;
     return (
         element instanceof HTMLInputElement ||
@@ -118,18 +118,18 @@ export const COMMANDS: Record<string, Command> = {
     "editor:redo": () => {},
     "editor:cut": () => COMMANDS["editor:copy"](),
     "editor:copy": () => {
-        if (inInput()) return document.execCommand("copy");
+        if (isInInput()) return document.execCommand("copy");
         const term = activeTerm()?.term;
         if (term?.hasSelection()) void writeText(term.getSelection());
     },
     "editor:paste": async () => {
         const text = await orElse(readText(), "");
         if (!text) return;
-        if (inInput()) document.execCommand("insertText", false, text);
+        if (isInInput()) document.execCommand("insertText", false, text);
         else activeTerm()?.paste(text);
     },
     "editor:selectAll": () => {
-        if (inInput()) return document.execCommand("selectAll");
+        if (isInInput()) return document.execCommand("selectAll");
         activeTerm()?.term.selectAll();
     },
     "editor:clearBuffer": () => activeTerm()?.term.clear(),
@@ -185,6 +185,6 @@ export function commandAllowedInInput(id: string) {
     );
 }
 
-export { inInput };
+export { isInInput };
 
 export { focusActive } from "./actions";
