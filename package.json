@@ -35,7 +35,7 @@
     "devDependencies": {
         "@babel/core": "^8",
         "@eslint/js": "^10.0.1",
-        "@rolldown/plugin-babel": "^0.2.4",
+        "@rolldown/plugin-babel": "^0.3.0",
         "@tauri-apps/cli": "^2.12.4",
         "@types/babel__core": "^7",
         "@types/react": "^19.3.0",
@@ -52,7 +52,7 @@
         "prettier": "^3.9.10",
         "prettier-plugin-astro": "^1.1.2",
         "typescript": "~6.0.3",
-        "typescript-eslint": "^8.72.0",
+        "typescript-eslint": "^8.72.1",
         "vite": "^8.3.5"
     },
     "packageManager": "pnpm@10.28.0"
