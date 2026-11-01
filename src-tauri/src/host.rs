@@ -192,18 +192,122 @@ pub fn open_url(url: String) -> Result<(), String> {
 }
 
 /// Resolves paths printed in a terminal against the shell's directory (else
-/// the home directory). Each comes back absolute if it exists, else `None`.
+/// the home directory). Each comes back absolute if it exists and isn't a
+/// system folder, else `None`.
 #[tauri::command]
 pub fn path_links(cwd: Option<String>, paths: Vec<String>) -> Vec<Option<String>> {
     let home = std::env::home_dir().unwrap_or_default();
     let base = cwd.map_or_else(|| home.clone(), PathBuf::from);
+    let system = SYSTEM_FOLDERS.get_or_init(system_folders);
     paths
         .iter()
         .map(|p| {
             let path = resolve(&base, &home, p);
-            path.exists().then(|| path.to_string_lossy().into_owned())
+            let real = real_path(&path).ok()?;
+            (!is_system_folder(&real, system)).then(|| path.to_string_lossy().into_owned())
         })
         .collect()
+}
+
+static SYSTEM_FOLDERS: std::sync::OnceLock<Vec<PathBuf>> = std::sync::OnceLock::new();
+
+/// Folders that belong to the OS, like `/`, `/usr` or `C:\Windows`. They show
+/// up everywhere in terminal output, so they aren't links. Files and folders
+/// inside them still are.
+fn system_folders() -> Vec<PathBuf> {
+    let mut list: Vec<PathBuf> = if cfg!(windows) {
+        [
+            "SystemRoot",
+            "ProgramFiles",
+            "ProgramFiles(x86)",
+            "ProgramData",
+        ]
+        .iter()
+        .filter_map(std::env::var_os)
+        .map(PathBuf::from)
+        .flat_map(|dir| {
+            let system32 = dir.join("System32");
+            [dir, system32]
+        })
+        .chain(std::env::var_os("SystemDrive").map(|drive| PathBuf::from(drive).join("Users")))
+        .collect()
+    } else {
+        [
+            "/bin",
+            "/boot",
+            "/dev",
+            "/etc",
+            "/home",
+            "/lib",
+            "/lib32",
+            "/lib64",
+            "/libx32",
+            "/media",
+            "/mnt",
+            "/opt",
+            "/proc",
+            "/root",
+            "/run",
+            "/sbin",
+            "/srv",
+            "/sys",
+            "/tmp",
+            "/usr",
+            "/usr/bin",
+            "/usr/include",
+            "/usr/lib",
+            "/usr/lib64",
+            "/usr/libexec",
+            "/usr/local",
+            "/usr/local/bin",
+            "/usr/local/lib",
+            "/usr/sbin",
+            "/usr/share",
+            "/var",
+            "/var/lib",
+            "/var/log",
+            "/var/tmp",
+            "/nix",
+            "/nix/store",
+            "/snap",
+            "/Applications",
+            "/Library",
+            "/System",
+            "/Users",
+            "/Volumes",
+            "/cores",
+            "/private",
+            "/private/etc",
+            "/private/tmp",
+            "/private/var",
+            "/opt/homebrew",
+        ]
+        .iter()
+        .map(PathBuf::from)
+        .collect()
+    };
+    // Canonical forms too, so `/etc` matches `/private/etc` on macOS.
+    let canonical: Vec<PathBuf> = list.iter().filter_map(|p| real_path(p).ok()).collect();
+    list.extend(canonical);
+    list
+}
+
+/// Whether `path` (already canonical) is a drive or filesystem root, or one of
+/// `system`. Case-insensitive on Windows and macOS, whose filesystems are.
+fn is_system_folder(path: &Path, system: &[PathBuf]) -> bool {
+    if path.parent().is_none() {
+        return true;
+    }
+    let fold = |p: &Path| {
+        let s = p.to_string_lossy().trim_end_matches(['/', '\\']).to_owned();
+        if cfg!(any(windows, target_os = "macos")) {
+            s.to_lowercase()
+        } else {
+            s
+        }
+    };
+    let path = fold(path);
+    system.iter().any(|dir| fold(dir) == path)
 }
 
 fn resolve(base: &Path, home: &Path, path: &str) -> PathBuf {
@@ -351,6 +455,39 @@ mod tests {
             Path::new("/home/me/notes.md")
         );
         assert_eq!(resolve(base, home, "~"), Path::new("/home/me"));
+    }
+
+    #[test]
+    fn system_folders_are_not_links() {
+        let system = [PathBuf::from("/usr"), PathBuf::from("/etc")];
+        assert!(is_system_folder(Path::new("/"), &system));
+        assert!(is_system_folder(Path::new("/usr"), &system));
+        assert!(is_system_folder(Path::new("/usr/"), &system));
+        assert!(!is_system_folder(Path::new("/usr/share/doc"), &system));
+        assert!(!is_system_folder(Path::new("/etc/hosts"), &system));
+        assert!(!is_system_folder(Path::new("/work/project"), &system));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn path_links_skip_system_folders() {
+        let dir = std::env::temp_dir().join(format!("vanitty-links-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("a.txt"), "").unwrap();
+        let links = path_links(
+            Some(dir.to_string_lossy().into_owned()),
+            vec![
+                "/".into(),
+                "/usr".into(),
+                "a.txt".into(),
+                "missing.txt".into(),
+            ],
+        );
+        std::fs::remove_dir_all(&dir).unwrap();
+        assert_eq!(links[0], None);
+        assert_eq!(links[1], None);
+        assert!(links[2].is_some());
+        assert_eq!(links[3], None);
     }
 
     fn vars(list: &[(&str, &str)]) -> impl Iterator<Item = (String, String)> {
